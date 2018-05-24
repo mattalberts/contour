@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
@@ -74,12 +75,14 @@ func main() {
 	xdsPort := serve.Flag("xds-port", "xDS gRPC API port").Default("8001").Int()
 
 	// translator configuration
+	r := resource{&t.DefaultTLSSecretName, &t.DefaultTLSSecretNamespace}
 	serve.Flag("envoy-http-address", "Envoy HTTP listener address").StringVar(&t.HTTPAddress)
 	serve.Flag("envoy-https-address", "Envoy HTTPS listener address").StringVar(&t.HTTPSAddress)
 	serve.Flag("envoy-http-port", "Envoy HTTP listener port").IntVar(&t.HTTPPort)
 	serve.Flag("envoy-https-port", "Envoy HTTPS listener port").IntVar(&t.HTTPSPort)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&t.UseProxyProto)
 	serve.Flag("ingress-class-name", "Contour IngressClass name").StringVar(&t.IngressClass)
+	serve.Flag("default-tls-secret", "Default TLS secret, <namespace>/<name>").SetValue(&r)
 
 	args := os.Args[1:]
 	switch kingpin.MustParse(app.Parse(args)) {
@@ -154,4 +157,29 @@ func check(err error) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+type resource struct {
+	name, namespace *string
+}
+
+// Set values the object from a string or errors.
+func (r *resource) Set(value string) error {
+	parts := strings.SplitN(strings.TrimSpace(value), "/", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("expected '<namespace>/<name>' got '%s'", value)
+	} else if parts[0] == "" {
+		return fmt.Errorf("expected '<namespace>/<name>' got '%s'", value)
+	} else if parts[1] == "" {
+		return fmt.Errorf("expected '<namespace>/<name>' got '%s'", value)
+	}
+	*r.namespace, *r.name = parts[0], parts[1]
+	return nil
+}
+
+func (r *resource) String() string {
+	if r.namespace != nil && r.name != nil {
+		return *r.namespace + "/" + *r.name
+	}
+	return ""
 }

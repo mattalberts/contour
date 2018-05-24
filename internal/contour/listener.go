@@ -59,6 +59,16 @@ type ListenerCache struct {
 	// If not set, defaults to false.
 	UseProxyProto bool
 
+	// DefaultTLSSecretName defines a default certificate to use for tls
+	// termination. An Ingress spec secretName overrides this default.
+	// If not set, defaults to ""
+	DefaultTLSSecretName string
+
+	// DefaultTLSSecretNamespace defines a default certificate to use for
+	// tls termination. An Ingress spec secretName overrides this default.
+	// If not set, defaults to ""
+	DefaultTLSSecretNamespace string
+
 	listenerCache
 	Cond
 }
@@ -160,7 +170,12 @@ func (lc *ListenerCache) recomputeTLSListener0(ingresses map[metadata]*v1beta1.I
 			continue
 		}
 		for _, tls := range i.Spec.TLS {
-			secret, ok := secrets[metadata{name: tls.SecretName, namespace: i.Namespace}]
+			secretName, secretNamespace := tls.SecretName, i.Namespace
+			if secretName == "" && lc.DefaultTLSSecretName != "" {
+				secretName = lc.DefaultTLSSecretName
+				secretNamespace = lc.DefaultTLSSecretNamespace
+			}
+			secret, ok := secrets[metadata{name: secretName, namespace: secretNamespace}]
 			if !ok {
 				// no secret for this ingress yet, skip it
 				continue

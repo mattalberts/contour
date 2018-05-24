@@ -582,7 +582,7 @@ func TestVirtualHostCacheRecomputevhost(t *testing.T) {
 			tr := &Translator{
 				FieldLogger: log,
 			}
-			tr.recomputevhost(tc.vhost, tc.ingresses)
+			tr.recomputevhost(tc.vhost, "", tc.ingresses)
 			got := tr.VirtualHostCache.HTTP.Values()
 			sort.Stable(virtualHostsByName(got))
 			if !reflect.DeepEqual(tc.ingress_http, got) {
@@ -650,7 +650,7 @@ func TestValidTLSSpecforVhost(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := validTLSSpecforVhost(tc.vhost, &tc.ing)
+			got := validTLSSpecforVhost(tc.vhost, "", &tc.ing)
 			if got != tc.want {
 				t.Fatal("got", got, "want", tc.want)
 			}

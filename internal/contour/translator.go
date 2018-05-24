@@ -178,7 +178,7 @@ func (t *Translator) addIngress(i *v1beta1.Ingress) {
 	// handle the special case of the default ingress first.
 	if i.Spec.Backend != nil {
 		// update t.vhosts cache
-		t.recomputevhost("*", t.cache.vhosts["*"])
+		t.recomputevhost("*", "", t.cache.vhosts["*"])
 	}
 
 	for _, rule := range i.Spec.Rules {
@@ -187,7 +187,7 @@ func (t *Translator) addIngress(i *v1beta1.Ingress) {
 			// If the host is unspecified, the Ingress routes all traffic based on the specified IngressRuleValue.
 			host = "*"
 		}
-		t.recomputevhost(host, t.cache.vhosts[host])
+		t.recomputevhost(host, t.DefaultTLSSecretName, t.cache.vhosts[host])
 	}
 }
 
@@ -210,7 +210,7 @@ func (t *Translator) removeIngress(i *v1beta1.Ingress) {
 	t.recomputeListeners(t.cache.ingresses, t.cache.secrets)
 
 	if i.Spec.Backend != nil {
-		t.recomputevhost("*", nil)
+		t.recomputevhost("*", "", nil)
 	}
 
 	for _, rule := range i.Spec.Rules {
@@ -219,7 +219,7 @@ func (t *Translator) removeIngress(i *v1beta1.Ingress) {
 			// If the host is unspecified, the Ingress routes all traffic based on the specified IngressRuleValue.
 			host = "*"
 		}
-		t.recomputevhost(rule.Host, t.cache.vhosts[host])
+		t.recomputevhost(rule.Host, t.DefaultTLSSecretName, t.cache.vhosts[host])
 	}
 }
 
