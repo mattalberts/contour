@@ -59,6 +59,11 @@ type ListenerCache struct {
 	// If not set, defaults to false.
 	UseProxyProto bool
 
+	// EnableTracing configures all listeners to emit tracing spans on
+	// egress (request sent to upstream).
+	// If not set, defaults to false.
+	EnableTracing bool
+
 	// DefaultTLSSecretName defines a default certificate to use for tls
 	// termination. An Ingress spec secretName overrides this default.
 	// If not set, defaults to ""
@@ -117,7 +122,7 @@ func (lc *ListenerCache) recomputeListener0(ingresses map[metadata]*v1beta1.Ingr
 	}
 	if valid > 0 {
 		l.FilterChains = []listener.FilterChain{
-			filterchain(lc.UseProxyProto, httpfilter(ENVOY_HTTP_LISTENER)),
+			filterchain(lc.UseProxyProto, httpfilter(ENVOY_HTTP_LISTENER, lc.EnableTracing)),
 		}
 	}
 	// TODO(dfc) some annotations may require the Ingress to no appear on
@@ -162,7 +167,7 @@ func (lc *ListenerCache) recomputeTLSListener0(ingresses map[metadata]*v1beta1.I
 	}
 
 	filters := []listener.Filter{
-		httpfilter(ENVOY_HTTPS_LISTENER),
+		httpfilter(ENVOY_HTTPS_LISTENER, lc.EnableTracing),
 	}
 
 	for _, i := range ingresses {
@@ -277,8 +282,8 @@ func tlscontext(secret *v1.Secret, alpnprotos ...string) *auth.DownstreamTlsCont
 	}
 }
 
-func httpfilter(routename string) listener.Filter {
-	return listener.Filter{
+func httpfilter(routename string, enabletracing bool) listener.Filter {
+	filter := listener.Filter{
 		Name: httpFilter,
 		Config: &types.Struct{
 			Fields: map[string]*types.Value{
@@ -318,6 +323,12 @@ func httpfilter(routename string) listener.Filter {
 			},
 		},
 	}
+	if enabletracing {
+		filter.Config.Fields["tracing"] = st(map[string]*types.Value{
+			"operation_name": sv("egress"),
+		})
+	}
+	return filter
 }
 
 func filterchain(useproxy bool, filters ...listener.Filter) listener.FilterChain {

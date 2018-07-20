@@ -81,6 +81,7 @@ func main() {
 	serve.Flag("envoy-https-address", "Envoy HTTPS listener address").StringVar(&t.HTTPSAddress)
 	serve.Flag("envoy-http-port", "Envoy HTTP listener port").IntVar(&t.HTTPPort)
 	serve.Flag("envoy-https-port", "Envoy HTTPS listener port").IntVar(&t.HTTPSPort)
+	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&t.EnableTracing)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&t.UseProxyProto)
 	serve.Flag("ingress-class-name", "Contour IngressClass name").StringVar(&t.IngressClass)
 	serve.Flag("default-tls-secret", "Default TLS secret, <namespace>/<name>").SetValue(&r)
