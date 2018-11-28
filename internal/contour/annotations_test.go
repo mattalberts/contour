@@ -130,26 +130,37 @@ func TestParseUpstreamProtocols(t *testing.T) {
 			a:    map[string]string{fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2"): ", ,"},
 			want: map[string]string{},
 		},
-		"single value": {
+		"h2": {
 			a: map[string]string{fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2"): "80"},
 			want: map[string]string{
 				"80": "h2",
 			},
 		},
-		"multiple value": {
-			a: map[string]string{fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2"): "80,http,443,https"},
+		"h2c": {
+			a: map[string]string{fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2c"): "80"},
+			want: map[string]string{
+				"80": "h2c",
+			},
+		},
+		"multiple mixed value": {
+			a: map[string]string{
+				fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2"):  "80,http,443,https",
+				fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2c"): "9000,grpc",
+			},
 			want: map[string]string{
 				"80":    "h2",
 				"http":  "h2",
 				"443":   "h2",
 				"https": "h2",
+				"9000":  "h2c",
+				"grpc":  "h2c",
 			},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := parseUpstreamProtocols(tc.a, annotationUpstreamProtocol, "h2")
+			got := parseUpstreamProtocols(tc.a, annotationUpstreamProtocol, "h2", "h2c")
 			if !reflect.DeepEqual(tc.want, got) {
 				t.Fatalf("parseUpstreamProtocols(%q): want: %v, got: %v", tc.a, tc.want, got)
 			}

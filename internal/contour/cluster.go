@@ -77,7 +77,7 @@ func (cc *ClusterCache) recomputeService(oldsvc, newsvc *v1.Service) {
 	}
 
 	// parse upstream protocol annotations
-	up := parseUpstreamProtocols(newsvc.Annotations, annotationUpstreamProtocol, "h2")
+	up := parseUpstreamProtocols(newsvc.Annotations, annotationUpstreamProtocol, "h2", "h2c")
 
 	// iterate over all ports in newsvc adding or updating their records and
 	// recording that face in named and unnamed.
@@ -151,6 +151,8 @@ func edscluster(svc *v1.Service, portString, upstreamProtocol string, config *v2
 
 	switch upstreamProtocol {
 	case "h2":
+		cluster.Http2ProtocolOptions = &core.Http2ProtocolOptions{}
+	case "h2c":
 		cluster.Http2ProtocolOptions = &core.Http2ProtocolOptions{}
 	}
 

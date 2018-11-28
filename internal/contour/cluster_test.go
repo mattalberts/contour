@@ -267,7 +267,46 @@ func TestClusterCacheRecomputeService(t *testing.T) {
 				},
 			},
 		},
-		"http2 upstream": {
+		"h2c upstream": {
+			oldObj: nil,
+			newObj: serviceWithAnnotations(
+				"default",
+				"kuard",
+				map[string]string{
+					fmt.Sprintf("%s.%s", annotationUpstreamProtocol, "h2c"): "80,http",
+				},
+				v1.ServicePort{
+					Protocol: "TCP",
+					Name:     "http",
+					Port:     80,
+				},
+			),
+			want: []proto.Message{
+				&v2.Cluster{
+					Name: "default/kuard/80",
+					Type: v2.Cluster_EDS,
+					EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+						EdsConfig:   apiconfigsource("contour"), // hard coded by initconfig
+						ServiceName: "default/kuard/http",
+					},
+					ConnectTimeout:       250 * time.Millisecond,
+					LbPolicy:             v2.Cluster_ROUND_ROBIN,
+					Http2ProtocolOptions: &core.Http2ProtocolOptions{},
+				},
+				&v2.Cluster{
+					Name: "default/kuard/http",
+					Type: v2.Cluster_EDS,
+					EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+						EdsConfig:   apiconfigsource("contour"), // hard coded by initconfig
+						ServiceName: "default/kuard/http",
+					},
+					ConnectTimeout:       250 * time.Millisecond,
+					LbPolicy:             v2.Cluster_ROUND_ROBIN,
+					Http2ProtocolOptions: &core.Http2ProtocolOptions{},
+				},
+			},
+		},
+		"h2 upstream": {
 			oldObj: nil,
 			newObj: serviceWithAnnotations(
 				"default",
