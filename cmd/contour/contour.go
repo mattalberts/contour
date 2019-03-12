@@ -137,6 +137,8 @@ func main() {
 	serve.Flag("ingress-class-name", "Contour IngressClass name").StringVar(&reh.IngressClass)
 	serve.Flag("ingressroute-root-namespaces", "Restrict contour to searching these namespaces for root ingress routes").StringVar(&ingressrouteRootNamespaceFlag)
 
+	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ch.EnableTracing)
+
 	args := os.Args[1:]
 	switch kingpin.MustParse(app.Parse(args)) {
 	case bootstrap.FullCommand():
