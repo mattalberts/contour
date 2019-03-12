@@ -43,6 +43,8 @@ var ingressrouteRootNamespaceFlag string
 
 func main() {
 	log := logrus.StandardLogger()
+	log.Out = os.Stderr
+
 	app := kingpin.New("contour", "Heptio Contour Kubernetes ingress controller.")
 	var config envoy.BootstrapConfig
 	bootstrap := app.Command("bootstrap", "Generate bootstrap configuration.")
@@ -74,6 +76,7 @@ func main() {
 	serve := app.Command("serve", "Serve xDS API traffic")
 	inCluster := serve.Flag("incluster", "use in cluster configuration.").Bool()
 	kubeconfig := serve.Flag("kubeconfig", "path to kubeconfig (if not in running inside a cluster)").Default(filepath.Join(os.Getenv("HOME"), ".kube", "config")).String()
+	verbose := serve.Flag("v", "enable logging at specified level").Default("3").Int()
 	xdsAddr := serve.Flag("xds-address", "xDS gRPC API address").Default("127.0.0.1").String()
 	xdsPort := serve.Flag("xds-port", "xDS gRPC API port").Default("8001").Int()
 
@@ -151,7 +154,6 @@ func main() {
 		stream := client.RouteStream()
 		watchstream(stream, routeType, resources)
 	case serve.FullCommand():
-		log.Infof("args: %v", args)
 		var g workgroup.Group
 
 		// client-go uses glog which requires initialisation as a side effect of calling
@@ -159,7 +161,13 @@ func main() {
 		// However kingpin owns our flag parsing, so we defer calling flag.Parse until
 		// this point to avoid the Go flag package from rejecting flags which are defined
 		// in kingpin. See #371
+		// mirror verbosity between glog and logrus
+		flag.Set("logtostderr", "true")
+		flag.Set("v", strconv.Itoa(*verbose))
 		flag.Parse()
+
+		log.SetLevel(logruslevel(*verbose))
+		log.Infof("args: %v", args)
 
 		reh.IngressRouteRootNamespaces = parseRootNamespaces(ingressrouteRootNamespaceFlag)
 
@@ -257,4 +265,16 @@ func parseRootNamespaces(rn string) []string {
 		ns = append(ns, strings.TrimSpace(s))
 	}
 	return ns
+}
+
+// bridge verbose flag into a logrus.Level
+func logruslevel(v int) (l logrus.Level) {
+	if v >= 0 && v <= 5 {
+		l = logrus.AllLevels[v]
+	} else if v > 5 {
+		l = logrus.DebugLevel
+	} else {
+		l = logrus.PanicLevel
+	}
+	return
 }
