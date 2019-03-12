@@ -17,7 +17,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -30,7 +30,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/google/go-cmp/cmp"
 	"github.com/heptio/contour/internal/dag"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -46,13 +46,13 @@ func TestListener(t *testing.T) {
 			name:    "http",
 			address: "0.0.0.0",
 			port:    9000,
-			f:       []listener.Filter{HTTPConnectionManager("http", "/dev/null", false)},
+			f:       []listener.Filter{HTTPConnectionManager("http", "/dev/null", 0, false)},
 			want: &v2.Listener{
 				Name:    "http",
 				Address: *SocketAddress("0.0.0.0", 9000),
 				FilterChains: []listener.FilterChain{{
 					Filters: []listener.Filter{
-						HTTPConnectionManager("http", "/dev/null", false),
+						HTTPConnectionManager("http", "/dev/null", 0, false),
 					},
 				}},
 			},
@@ -65,7 +65,7 @@ func TestListener(t *testing.T) {
 				ProxyProtocol(),
 			},
 			f: []listener.Filter{
-				HTTPConnectionManager("http-proxy", "/dev/null", false),
+				HTTPConnectionManager("http-proxy", "/dev/null", 0, false),
 			},
 			want: &v2.Listener{
 				Name:    "http-proxy",
@@ -75,7 +75,7 @@ func TestListener(t *testing.T) {
 				},
 				FilterChains: []listener.FilterChain{{
 					Filters: []listener.Filter{
-						HTTPConnectionManager("http-proxy", "/dev/null", false),
+						HTTPConnectionManager("http-proxy", "/dev/null", 0, false),
 					},
 				}},
 			},
