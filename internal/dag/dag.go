@@ -81,6 +81,9 @@ type Route struct {
 
 	// Indicates that during forwarding, the matched prefix (or path) should be swapped with this value
 	PrefixRewrite string
+
+	// MaxGrpcTimeout provides grpc servers with an upper bound for request handling
+	MaxGrpcTimeout time.Duration
 }
 
 func (r *Route) addHTTPService(s *HTTPService) {

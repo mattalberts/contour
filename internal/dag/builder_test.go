@@ -479,6 +479,94 @@ func TestDAGInsert(t *testing.T) {
 		},
 	}
 
+	// i14a has an invalid max-grpc-timeout
+	i14a := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/max-grpc-timeout": "peanut",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i14b has a reasonable max-grpc-timeout
+	i14b := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/max-grpc-timeout": "1m30s", // 90 seconds y'all
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i14c has an unreasonable max-grpc-timeout
+	i14c := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/max-grpc-timeout": "infinite",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{{Path: "/",
+						Backend: v1beta1.IngressBackend{ServiceName: "kuard",
+							ServicePort: intstr.FromString("http")},
+					}}},
+				}}}},
+	}
+
+	// i14d without max-grpc-timeout
+	i14d := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "timeout",
+			Namespace:   "default",
+			Annotations: map[string]string{},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{{Path: "/",
+						Backend: v1beta1.IngressBackend{ServiceName: "kuard",
+							ServicePort: intstr.FromString("http")},
+					}}},
+				}}}},
+	}
+
 	i3a := &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kuard",
@@ -2480,6 +2568,113 @@ func TestDAGInsert(t *testing.T) {
 										httpService(s1),
 									),
 									Timeout: -1,
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ invalid max-grpc-timeout annotation": {
+			objs: []interface{}{
+				i14a,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i14a,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									MaxGrpcTimeout: -1, // invalid timeout equals infinity ¯\_(ツ)_/¯.
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ valid max-grpc-timeout annotation": {
+			objs: []interface{}{
+				i14b,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i14b,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									MaxGrpcTimeout: 90 * time.Second,
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ infinite max-grpc-timeout annotation": {
+			objs: []interface{}{
+				i14c,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i14c,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									MaxGrpcTimeout: -1,
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ default max-grpc-timeout": {
+			Builder: &Builder{
+				MaxGrpcTimeout: 15 * time.Second,
+			},
+			objs: []interface{}{
+				i14d,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i14d,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									MaxGrpcTimeout: 15 * time.Second,
 								},
 							),
 						},

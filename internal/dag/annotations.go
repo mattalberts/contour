@@ -37,6 +37,7 @@ const (
 	annotationRetryOn            = "contour.heptio.com/retry-on"
 	annotationNumRetries         = "contour.heptio.com/num-retries"
 	annotationPerTryTimeout      = "contour.heptio.com/per-try-timeout"
+	annotationMaxGrpcTimeout     = "contour.heptio.com/max-grpc-timeout"
 
 	// By default envoy applies a 15 second timeout to all backend requests.
 	// The explicit value 0 turns off the timeout, implying "never time out"
@@ -69,6 +70,13 @@ func parseAnnotationTimeout(annotations map[string]string, key string) time.Dura
 		return infiniteTimeout
 	}
 	return timeoutParsed
+}
+
+func parseAnnotationTimeoutWithDefault(annotations map[string]string, key string, val time.Duration) time.Duration {
+	if _, ok := annotations[key]; ok {
+		return parseAnnotationTimeout(annotations, key)
+	}
+	return val
 }
 
 // parseAnnotation parses the annotation map for the supplied key.

@@ -62,6 +62,49 @@ func TestParseAnnotationTimeout(t *testing.T) {
 	}
 }
 
+func TestParseAnnotationTimeoutWithDefault(t *testing.T) {
+	tests := map[string]struct {
+		a    map[string]string
+		v    time.Duration
+		want time.Duration
+	}{
+		"nada": {
+			a:    nil,
+			v:    5 * time.Second,
+			want: 5 * time.Second,
+		},
+		"empty": {
+			a:    map[string]string{annotationRequestTimeout: ""}, // not even sure this is possible via the API
+			v:    5 * time.Second,
+			want: 0,
+		},
+		"infinity": {
+			a:    map[string]string{annotationRequestTimeout: "infinity"},
+			v:    5 * time.Second,
+			want: -1,
+		},
+		"10 seconds": {
+			a:    map[string]string{annotationRequestTimeout: "10s"},
+			v:    5 * time.Second,
+			want: 10 * time.Second,
+		},
+		"invalid": {
+			a:    map[string]string{annotationRequestTimeout: "10"}, // 10 what?
+			v:    5 * time.Second,
+			want: -1,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := parseAnnotationTimeoutWithDefault(tc.a, annotationRequestTimeout, tc.v)
+			if got != tc.want {
+				t.Fatalf("parseAnnotationTimeout(%q): want: %v, got: %v", tc.a, tc.want, got)
+			}
+		})
+	}
+}
+
 func TestParseAnnotationUInt32(t *testing.T) {
 	tests := map[string]struct {
 		a     map[string]string

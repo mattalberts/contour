@@ -152,6 +152,10 @@ type Builder struct {
 	// presents Envoy at the edge network.
 	// If not supplied, defaults to 443.
 	ExternalSecurePort int
+
+	// MaxGrpcTimeout configures a default gRPC
+	// timeout for all routes.
+	MaxGrpcTimeout time.Duration
 }
 
 // Build builds a new *DAG.
@@ -395,7 +399,7 @@ func (b *builder) compute() *DAG {
 }
 
 // prefixRoute returns a new dag.Route for the (ingress,prefix) tuple.
-func prefixRoute(ingress *v1beta1.Ingress, prefix string) *Route {
+func prefixRoute(ingress *v1beta1.Ingress, prefix string, maxGrpcTimeout time.Duration) *Route {
 	// compute websocket enabled routes
 	wr := websocketRoutes(ingress)
 
@@ -405,14 +409,15 @@ func prefixRoute(ingress *v1beta1.Ingress, prefix string) *Route {
 	}
 
 	return &Route{
-		Prefix:        prefix,
-		object:        ingress,
-		HTTPSUpgrade:  tlsRequired(ingress),
-		Websocket:     wr[prefix],
-		Timeout:       parseAnnotationTimeout(ingress.Annotations, annotationRequestTimeout),
-		RetryOn:       ingress.Annotations[annotationRetryOn],
-		NumRetries:    parseAnnotation(ingress.Annotations, annotationNumRetries),
-		PerTryTimeout: perTryTimeout,
+		Prefix:         prefix,
+		object:         ingress,
+		HTTPSUpgrade:   tlsRequired(ingress),
+		Websocket:      wr[prefix],
+		Timeout:        parseAnnotationTimeout(ingress.Annotations, annotationRequestTimeout),
+		RetryOn:        ingress.Annotations[annotationRetryOn],
+		NumRetries:     parseAnnotation(ingress.Annotations, annotationNumRetries),
+		PerTryTimeout:  perTryTimeout,
+		MaxGrpcTimeout: parseAnnotationTimeoutWithDefault(ingress.Annotations, annotationMaxGrpcTimeout, maxGrpcTimeout),
 	}
 }
 
@@ -550,7 +555,7 @@ func (b *builder) computeIngresses() {
 			host := stringOrDefault(rule.Host, "*")
 			for _, httppath := range httppaths(rule) {
 				prefix := stringOrDefault(httppath.Path, "/")
-				r := prefixRoute(ing, prefix)
+				r := prefixRoute(ing, prefix, b.source.MaxGrpcTimeout)
 				be := httppath.Backend
 				m := meta{name: be.ServiceName, namespace: ing.Namespace}
 				if s := b.lookupHTTPService(m, be.ServicePort, 0, "", nil); s != nil {

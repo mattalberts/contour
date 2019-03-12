@@ -20,7 +20,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/google/go-cmp/cmp"
 	"github.com/heptio/contour/internal/dag"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -237,6 +237,46 @@ func TestRouteRoute(t *testing.T) {
 						appendHeader("x-request-start", "t=%START_TIME(%s.%3f)%"),
 					),
 					Timeout: duration(0),
+				},
+			},
+		},
+		"max-grpc-timeout-90s": {
+			route: &dag.Route{
+				Prefix:         "/",
+				MaxGrpcTimeout: 90 * time.Second,
+			},
+			services: []*dag.HTTPService{{
+				TCPService: service(s1),
+			}},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					RequestHeadersToAdd: headers(
+						appendHeader("x-request-start", "t=%START_TIME(%s.%3f)%"),
+					),
+					MaxGrpcTimeout: duration(90 * time.Second),
+				},
+			},
+		},
+		"max-grpc-timeout-infinity": {
+			route: &dag.Route{
+				Prefix:         "/",
+				MaxGrpcTimeout: -1,
+			},
+			services: []*dag.HTTPService{{
+				TCPService: service(s1),
+			}},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					RequestHeadersToAdd: headers(
+						appendHeader("x-request-start", "t=%START_TIME(%s.%3f)%"),
+					),
+					MaxGrpcTimeout: duration(0),
 				},
 			},
 		},

@@ -28,9 +28,10 @@ import (
 // weighted cluster.
 func RouteRoute(r *dag.Route, services []*dag.HTTPService) *route.Route_Route {
 	ra := route.RouteAction{
-		RetryPolicy:   retryPolicy(r),
-		Timeout:       timeout(r),
-		PrefixRewrite: r.PrefixRewrite,
+		RetryPolicy:    retryPolicy(r),
+		Timeout:        timeout(r),
+		PrefixRewrite:  r.PrefixRewrite,
+		MaxGrpcTimeout: maxGrpcTimeout(r),
 	}
 
 	if r.Websocket {
@@ -70,6 +71,20 @@ func timeout(r *dag.Route) *time.Duration {
 		return duration(0)
 	default:
 		return duration(r.Timeout)
+	}
+}
+
+func maxGrpcTimeout(r *dag.Route) *time.Duration {
+	switch r.MaxGrpcTimeout {
+	case 0:
+		// no timeout specified
+		return nil
+	case -1:
+		// infinite timeout, set timeout value to a pointer to zero which tells
+		// envoy "infinite timeout"
+		return duration(0)
+	default:
+		return duration(r.MaxGrpcTimeout)
 	}
 }
 
