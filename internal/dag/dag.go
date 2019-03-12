@@ -82,6 +82,9 @@ type Route struct {
 	// Indicates that during forwarding, the matched prefix (or path) should be swapped with this value
 	PrefixRewrite string
 
+	// IdleTimeout idle timeout for request handling
+	IdleTimeout time.Duration
+
 	// MaxGrpcTimeout provides grpc servers with an upper bound for request handling
 	MaxGrpcTimeout time.Duration
 }

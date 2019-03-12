@@ -567,6 +567,94 @@ func TestDAGInsert(t *testing.T) {
 				}}}},
 	}
 
+	// i15a has an invalid max-grpc-timeout
+	i15a := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/idle-timeout": "peanut",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i15b has a reasonable max-grpc-timeout
+	i15b := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/idle-timeout": "1m30s", // 90 seconds y'all
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i15c has an unreasonable max-grpc-timeout
+	i15c := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/idle-timeout": "infinite",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{{Path: "/",
+						Backend: v1beta1.IngressBackend{ServiceName: "kuard",
+							ServicePort: intstr.FromString("http")},
+					}}},
+				}}}},
+	}
+
+	// i15d without max-grpc-timeout
+	i15d := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "timeout",
+			Namespace:   "default",
+			Annotations: map[string]string{},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{{Path: "/",
+						Backend: v1beta1.IngressBackend{ServiceName: "kuard",
+							ServicePort: intstr.FromString("http")},
+					}}},
+				}}}},
+	}
+
 	i3a := &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kuard",
@@ -2675,6 +2763,113 @@ func TestDAGInsert(t *testing.T) {
 										httpService(s1),
 									),
 									MaxGrpcTimeout: 15 * time.Second,
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ invalid idle-timeout annotation": {
+			objs: []interface{}{
+				i15a,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i15a,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									IdleTimeout: -1, // invalid timeout equals infinity ¯\_(ツ)_/¯.
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ valid idle-timeout annotation": {
+			objs: []interface{}{
+				i15b,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i15b,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									IdleTimeout: 90 * time.Second,
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ infinite idle-timeout annotation": {
+			objs: []interface{}{
+				i15c,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i15c,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									IdleTimeout: -1,
+								},
+							),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ default idle-timeout": {
+			Builder: &Builder{
+				IdleTimeout: 15 * time.Second,
+			},
+			objs: []interface{}{
+				i15d,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "*",
+							routes: routemap(
+								&Route{
+									Prefix: "/",
+									object: i15d,
+									httpServices: servicemap(
+										httpService(s1),
+									),
+									IdleTimeout: 15 * time.Second,
 								},
 							),
 						},

@@ -153,6 +153,10 @@ type Builder struct {
 	// If not supplied, defaults to 443.
 	ExternalSecurePort int
 
+	// IdleTimeout configures a default idle timeout
+	// for all routes.
+	IdleTimeout time.Duration
+
 	// MaxGrpcTimeout configures a default gRPC
 	// timeout for all routes.
 	MaxGrpcTimeout time.Duration
@@ -399,7 +403,7 @@ func (b *builder) compute() *DAG {
 }
 
 // prefixRoute returns a new dag.Route for the (ingress,prefix) tuple.
-func prefixRoute(ingress *v1beta1.Ingress, prefix string, maxGrpcTimeout time.Duration) *Route {
+func prefixRoute(ingress *v1beta1.Ingress, prefix string, idleTimeout, maxGrpcTimeout time.Duration) *Route {
 	// compute websocket enabled routes
 	wr := websocketRoutes(ingress)
 
@@ -417,6 +421,7 @@ func prefixRoute(ingress *v1beta1.Ingress, prefix string, maxGrpcTimeout time.Du
 		RetryOn:        ingress.Annotations[annotationRetryOn],
 		NumRetries:     parseAnnotation(ingress.Annotations, annotationNumRetries),
 		PerTryTimeout:  perTryTimeout,
+		IdleTimeout:    parseAnnotationTimeoutWithDefault(ingress.Annotations, annotationIdleTimeout, idleTimeout),
 		MaxGrpcTimeout: parseAnnotationTimeoutWithDefault(ingress.Annotations, annotationMaxGrpcTimeout, maxGrpcTimeout),
 	}
 }
@@ -555,7 +560,7 @@ func (b *builder) computeIngresses() {
 			host := stringOrDefault(rule.Host, "*")
 			for _, httppath := range httppaths(rule) {
 				prefix := stringOrDefault(httppath.Path, "/")
-				r := prefixRoute(ing, prefix, b.source.MaxGrpcTimeout)
+				r := prefixRoute(ing, prefix, b.source.IdleTimeout, b.source.MaxGrpcTimeout)
 				be := httppath.Backend
 				m := meta{name: be.ServiceName, namespace: ing.Namespace}
 				if s := b.lookupHTTPService(m, be.ServicePort, 0, "", nil); s != nil {

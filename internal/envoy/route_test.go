@@ -240,6 +240,46 @@ func TestRouteRoute(t *testing.T) {
 				},
 			},
 		},
+		"idle-timeout-90s": {
+			route: &dag.Route{
+				Prefix:      "/",
+				IdleTimeout: 90 * time.Second,
+			},
+			services: []*dag.HTTPService{{
+				TCPService: service(s1),
+			}},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					RequestHeadersToAdd: headers(
+						appendHeader("x-request-start", "t=%START_TIME(%s.%3f)%"),
+					),
+					IdleTimeout: duration(90 * time.Second),
+				},
+			},
+		},
+		"idle-timeout-infinity": {
+			route: &dag.Route{
+				Prefix:      "/",
+				IdleTimeout: -1,
+			},
+			services: []*dag.HTTPService{{
+				TCPService: service(s1),
+			}},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					RequestHeadersToAdd: headers(
+						appendHeader("x-request-start", "t=%START_TIME(%s.%3f)%"),
+					),
+					IdleTimeout: duration(0),
+				},
+			},
+		},
 		"max-grpc-timeout-90s": {
 			route: &dag.Route{
 				Prefix:         "/",

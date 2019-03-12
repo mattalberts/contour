@@ -138,6 +138,7 @@ func main() {
 	serve.Flag("ingressroute-root-namespaces", "Restrict contour to searching these namespaces for root ingress routes").StringVar(&ingressrouteRootNamespaceFlag)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ch.EnableTracing)
+	serve.Flag("idle-timeout", "Idle timeout for all routes").DurationVar(&reh.IdleTimeout)
 	serve.Flag("max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&reh.MaxGrpcTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ch.RequestTimeout)
 
