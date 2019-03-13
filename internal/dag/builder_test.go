@@ -96,6 +96,22 @@ func TestDAGInsert(t *testing.T) {
 			}},
 		},
 	}
+	// i3b silimar to i3 with default secret
+	i3b := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kuard",
+			Namespace: "default",
+		},
+		Spec: v1beta1.IngressSpec{
+			TLS: []v1beta1.IngressTLS{{
+				Hosts: []string{"kuard.example.com"},
+			}},
+			Rules: []v1beta1.IngressRule{{
+				Host:             "kuard.example.com",
+				IngressRuleValue: ingressrulevalue(backend("kuard", intstr.FromInt(8080))),
+			}},
+		},
+	}
 	// i4 is like i1 except it uses a named service port
 	i4 := &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -884,6 +900,27 @@ func TestDAGInsert(t *testing.T) {
 		},
 	}
 
+	// ir1e tcp forwards traffic to default/kuard:8080 by TLS terminating
+	// it first (using the default certificate)
+	ir1e := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kuard-tcp",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "kuard.example.com",
+				TLS:  &ingressroutev1.TLS{},
+			},
+			TCPProxy: &ingressroutev1.TCPProxy{
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			},
+		},
+	}
+
 	// ir2 is like ir1 but refers to two backend services
 	ir2 := &ingressroutev1.IngressRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1311,6 +1348,13 @@ func TestDAGInsert(t *testing.T) {
 		},
 		Data: secretdata("certificate", "key"),
 	}
+	sec2 := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret",
+			Namespace: "other",
+		},
+		Data: secretdata("certificate", "key"),
+	}
 
 	tests := map[string]struct {
 		*Builder
@@ -1661,6 +1705,87 @@ func TestDAGInsert(t *testing.T) {
 			objs: []interface{}{
 				i3,
 				sec1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "kuard.example.com",
+							routes: routemap(
+								route("/", i3),
+							),
+						},
+					),
+				},
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						&SecureVirtualHost{
+							VirtualHost: VirtualHost{
+								Name: "kuard.example.com",
+								routes: routemap(
+									route("/", i3),
+								),
+							},
+							MinProtoVersion: auth.TlsParameters_TLSv1_1,
+							Secret:          secret(sec1),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ default tls": {
+			Builder: func() *Builder {
+				b := new(Builder)
+				b.DefaultTLSSecretName = "secret"
+				b.DefaultTLSSecretNamespace = "other"
+				return b
+			}(),
+			objs: []interface{}{
+				sec2,
+				i3b,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						&VirtualHost{
+							Name: "kuard.example.com",
+							routes: routemap(
+								route("/", i3b),
+							),
+						},
+					),
+				},
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						&SecureVirtualHost{
+							VirtualHost: VirtualHost{
+								Name: "kuard.example.com",
+								routes: routemap(
+									route("/", i3b),
+								),
+							},
+							MinProtoVersion: auth.TlsParameters_TLSv1_1,
+							Secret:          secret(sec2),
+						},
+					),
+				},
+			),
+		},
+		"insert ingress w/ default tls override": {
+			Builder: func() *Builder {
+				b := new(Builder)
+				b.DefaultTLSSecretName = "secret"
+				b.DefaultTLSSecretNamespace = "other"
+				return b
+			}(),
+			objs: []interface{}{
+				sec1,
+				sec2,
+				i3,
 			},
 			want: listeners(
 				&Listener{
@@ -2141,6 +2266,66 @@ func TestDAGInsert(t *testing.T) {
 		"insert ingressroute with tcp forward with TLS termination": {
 			objs: []interface{}{
 				ir1a, s1, sec1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						&SecureVirtualHost{
+							VirtualHost: VirtualHost{
+								Name: "kuard.example.com",
+								TCPProxy: &TCPProxy{
+									Services: []*TCPService{
+										tcpService(s1),
+									},
+								},
+							},
+							Secret:          secret(sec1),
+							MinProtoVersion: auth.TlsParameters_TLSv1_1,
+						},
+					),
+				},
+			),
+		},
+		"insert ingressroute with tcp forward with default TLS termination": {
+			Builder: func() *Builder {
+				b := new(Builder)
+				b.DefaultTLSSecretName = "secret"
+				b.DefaultTLSSecretNamespace = "other"
+				return b
+			}(),
+			objs: []interface{}{
+				ir1e, s1, sec2,
+			},
+			want: listeners(
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						&SecureVirtualHost{
+							VirtualHost: VirtualHost{
+								Name: "kuard.example.com",
+								TCPProxy: &TCPProxy{
+									Services: []*TCPService{
+										tcpService(s1),
+									},
+								},
+							},
+							Secret:          secret(sec2),
+							MinProtoVersion: auth.TlsParameters_TLSv1_1,
+						},
+					),
+				},
+			),
+		},
+		"insert ingressroute with tcp forward with default TLS termination override": {
+			Builder: func() *Builder {
+				b := new(Builder)
+				b.DefaultTLSSecretName = "secret"
+				b.DefaultTLSSecretNamespace = "other"
+				return b
+			}(),
+			objs: []interface{}{
+				ir1a, s1, sec1, sec2,
 			},
 			want: listeners(
 				&Listener{

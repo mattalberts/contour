@@ -14,10 +14,12 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 func TestParseRootNamespaces(t *testing.T) {
@@ -94,6 +96,96 @@ func TestLogrusLevel(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			out := logruslevel(tc.in)
+			if !reflect.DeepEqual(out, tc.out) {
+				t.Fatalf("expected: %q, got: %q", tc.out, out)
+			}
+		})
+	}
+}
+
+func TestResourceMixin(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		in  string
+		out *resource
+		err error
+	}{
+		"resource-empty": {
+			in:  "",
+			out: &resource{},
+			err: nil,
+		},
+		"resource-no-name": {
+			in:  "a/",
+			out: &resource{},
+			err: fmt.Errorf("expected '<namespace>/<name>' got '%s'", "a/"),
+		},
+		"resource-no-namespace": {
+			in:  "/b",
+			out: &resource{},
+			err: fmt.Errorf("expected '<namespace>/<name>' got '%s'", "/b"),
+		},
+		"resource-too-many-parts": {
+			in:  "a/b/c",
+			out: &resource{},
+			err: fmt.Errorf("expected '<namespace>/<name>' got '%s'", "a/b/c"),
+		},
+		"resource-okay": {
+			in: "a/b",
+			out: &resource{
+				namespace: "a",
+				name:      "b",
+			},
+			err: nil,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			app := kingpin.New(name, name)
+			out := resourceMixin(app.Flag("o", "test"))
+			_, err := app.Parse([]string{"--o=" + tc.in})
+
+			if !reflect.DeepEqual(out, tc.out) {
+				t.Fatalf("expected: %q, got: %q", tc.out, out)
+			}
+			if !reflect.DeepEqual(err, tc.err) {
+				t.Fatalf("expected: %q, got: %q", tc.err, err)
+			}
+		})
+	}
+}
+
+func TestResourceString(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		in  *resource
+		out string
+	}{
+		"resource-empty": {
+			in:  &resource{},
+			out: "",
+		},
+		"resource-no-name": {
+			in: &resource{
+				namespace: "a",
+			},
+			out: "",
+		},
+		"resource-no-namespace": {
+			in: &resource{
+				name: "b",
+			},
+			out: "",
+		},
+		"resource-okay": {
+			in: &resource{
+				namespace: "a",
+				name:      "b",
+			},
+			out: "a/b",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			out := tc.in.String()
 			if !reflect.DeepEqual(out, tc.out) {
 				t.Fatalf("expected: %q, got: %q", tc.out, out)
 			}

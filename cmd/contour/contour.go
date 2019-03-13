@@ -141,6 +141,7 @@ func main() {
 	serve.Flag("idle-timeout", "Idle timeout for all routes").DurationVar(&reh.IdleTimeout)
 	serve.Flag("max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&reh.MaxGrpcTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ch.RequestTimeout)
+	secret := resourceMixin(serve.Flag("default-tls-secret", "default tls certificate secret <namespace>/<name>"))
 
 	args := os.Args[1:]
 	switch kingpin.MustParse(app.Parse(args)) {
@@ -175,6 +176,8 @@ func main() {
 		log.Infof("args: %v", args)
 
 		reh.IngressRouteRootNamespaces = parseRootNamespaces(ingressrouteRootNamespaceFlag)
+		reh.DefaultTLSSecretNamespace = secret.namespace
+		reh.DefaultTLSSecretName = secret.name
 
 		client, contourClient := newClient(*kubeconfig, *inCluster)
 
@@ -281,5 +284,38 @@ func logruslevel(v int) (l logrus.Level) {
 	} else {
 		l = logrus.PanicLevel
 	}
+	return
+}
+
+// resource is a name namespace tuple
+type resource struct {
+	name, namespace string
+}
+
+func (r *resource) Set(val string) error {
+	if len(val) > 0 {
+		parts := strings.SplitN(strings.TrimSpace(val), "/", 3)
+		if len(parts) != 2 {
+			return fmt.Errorf("expected '<namespace>/<name>' got '%s'", val)
+		} else if parts[0] == "" {
+			return fmt.Errorf("expected '<namespace>/<name>' got '%s'", val)
+		} else if parts[1] == "" {
+			return fmt.Errorf("expected '<namespace>/<name>' got '%s'", val)
+		}
+		r.namespace, r.name = parts[0], parts[1]
+	}
+	return nil
+}
+
+func (r *resource) String() (val string) {
+	if r.namespace != "" && r.name != "" {
+		val = r.namespace + "/" + r.name
+	}
+	return
+}
+
+func resourceMixin(s kingpin.Settings) (val *resource) {
+	val = &resource{}
+	s.SetValue(val)
 	return
 }
