@@ -30,10 +30,11 @@ const (
 	kubernetesIngressAllowHttp = "kubernetes.io/ingress.allow-http"
 	kubernetesIngressForceSSL  = "ingress.kubernetes.io/force-ssl-redirect"
 
-	annotationRequestTimeout = "contour.heptio.com/request-timeout"
-	annotationRetryOn        = "contour.heptio.com/retry-on"
-	annotationNumRetries     = "contour.heptio.com/num-retries"
-	annotationPerTryTimeout  = "contour.heptio.com/per-try-timeout"
+	annotationRequestTimeout  = "contour.heptio.com/request-timeout"
+	annotationRetryOn         = "contour.heptio.com/retry-on"
+	annotationNumRetries      = "contour.heptio.com/num-retries"
+	annotationPerTryTimeout   = "contour.heptio.com/per-try-timeout"
+	annotationWebsocketRoutes = "contour.heptio.com/websocket-routes"
 
 	// By default envoy applies a 15 second timeout to all backend requests.
 	// The explicit value 0 turns off the timeout, implying "never time out"
@@ -105,4 +106,17 @@ func httpAllowed(i *v1beta1.Ingress) bool {
 // present and set to true.
 func tlsRequired(i *v1beta1.Ingress) bool {
 	return i.Annotations["ingress.kubernetes.io/force-ssl-redirect"] == "true"
+}
+
+// websocketRoutes returns a map of websocket routes. If the value is not present, or
+// malformed, then an empty map is returned.
+func websocketRoutes(i *v1beta1.Ingress) map[string]*types.BoolValue {
+	routes := make(map[string]*types.BoolValue)
+	for _, v := range strings.Split(i.Annotations[annotationWebsocketRoutes], ",") {
+		route := strings.TrimSpace(v)
+		if route != "" {
+			routes[route] = &types.BoolValue{Value: true}
+		}
+	}
+	return routes
 }

@@ -49,7 +49,7 @@ func (v *VirtualHostCache) recomputevhost(vhost, secretname string, ingresses ma
 			for _, p := range rule.IngressRuleValue.HTTP.Paths {
 				vv.Routes = append(vv.Routes, route.Route{
 					Match:  pathToRouteMatch(p),
-					Action: action(ing, &p.Backend),
+					Action: action(ing, p),
 				})
 			}
 		}
@@ -70,9 +70,13 @@ func (v *VirtualHostCache) recomputevhost(vhost, secretname string, ingresses ma
 		}
 		requireTLS := tlsRequired(i)
 		if i.Spec.Backend != nil && len(ingresses) == 1 {
+			p := v1beta1.HTTPIngressPath{
+				Path:    "/",
+				Backend: *i.Spec.Backend,
+			}
 			r := route.Route{
 				Match:  prefixmatch("/"),
-				Action: action(i, i.Spec.Backend),
+				Action: action(i, p),
 			}
 
 			if requireTLS {
@@ -96,7 +100,7 @@ func (v *VirtualHostCache) recomputevhost(vhost, secretname string, ingresses ma
 			for _, p := range rule.IngressRuleValue.HTTP.Paths {
 				r := route.Route{
 					Match:  pathToRouteMatch(p),
-					Action: action(i, &p.Backend),
+					Action: action(i, p),
 				}
 				if requireTLS {
 					r.Action = &route.Route_Redirect{
@@ -119,8 +123,8 @@ func (v *VirtualHostCache) recomputevhost(vhost, secretname string, ingresses ma
 
 // action computes the cluster route action, a *route.Route_route for the
 // supplied ingress and backend.
-func action(i *v1beta1.Ingress, be *v1beta1.IngressBackend) *route.Route_Route {
-	name := ingressBackendToClusterName(i, be)
+func action(i *v1beta1.Ingress, p v1beta1.HTTPIngressPath) *route.Route_Route {
+	name := ingressBackendToClusterName(i, &p.Backend)
 	ca := route.Route_Route{
 		Route: &route.RouteAction{
 			ClusterSpecifier: &route.RouteAction_Cluster{
@@ -142,6 +146,12 @@ func action(i *v1beta1.Ingress, be *v1beta1.IngressBackend) *route.Route_Route {
 		}
 	}
 
+	wr := websocketRoutes(i)
+	if p.Path == "" {
+		ca.Route.UseWebsocket = wr["/"]
+	} else {
+		ca.Route.UseWebsocket = wr[p.Path]
+	}
 	return &ca
 }
 
@@ -185,7 +195,7 @@ func (l longestRouteFirst) Less(i, j int) bool {
 
 // pathToRoute converts a HTTPIngressPath to a partial route.RouteMatch.
 func pathToRouteMatch(p v1beta1.HTTPIngressPath) route.RouteMatch {
-	if p.Path == "" {
+	if p.Path == "" || p.Path == "/" {
 		// If the Path is empty, the k8s spec says
 		// "If unspecified, the path defaults to a catch all sending
 		// traffic to the backend."
