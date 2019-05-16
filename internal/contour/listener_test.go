@@ -16,13 +16,14 @@ package contour
 import (
 	"reflect"
 	"testing"
+	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -56,7 +57,7 @@ func TestRecomputeListener(t *testing.T) {
 				Name:    ENVOY_HTTP_LISTENER,
 				Address: socketaddress("0.0.0.0", 8080),
 				FilterChains: []listener.FilterChain{
-					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, false)),
+					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, false, 0, 0)),
 				},
 			}},
 			remove: nil,
@@ -102,7 +103,7 @@ func TestRecomputeListener(t *testing.T) {
 				Name:    ENVOY_HTTP_LISTENER,
 				Address: socketaddress("127.0.0.1", 9000),
 				FilterChains: []listener.FilterChain{
-					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, false)),
+					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, false, 0, 0)),
 				},
 			}},
 			remove: nil,
@@ -126,7 +127,7 @@ func TestRecomputeListener(t *testing.T) {
 				Name:    ENVOY_HTTP_LISTENER,
 				Address: socketaddress("0.0.0.0", 8080),
 				FilterChains: []listener.FilterChain{
-					filterchain(true, httpfilter(ENVOY_HTTP_LISTENER, false)),
+					filterchain(true, httpfilter(ENVOY_HTTP_LISTENER, false, 0, 0)),
 				},
 			}},
 			remove: nil,
@@ -150,7 +151,55 @@ func TestRecomputeListener(t *testing.T) {
 				Name:    ENVOY_HTTP_LISTENER,
 				Address: socketaddress("0.0.0.0", 8080),
 				FilterChains: []listener.FilterChain{
-					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, true)),
+					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, true, 0, 0)),
+				},
+			}},
+			remove: nil,
+		},
+		"idle timeout": {
+			ListenerCache: ListenerCache{
+				IdleTimeout: 15 * time.Second,
+			},
+			ingresses: map[metadata]*v1beta1.Ingress{
+				metadata{namespace: "default", name: "simple"}: {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "simple",
+						Namespace: "default",
+					},
+					Spec: v1beta1.IngressSpec{
+						Backend: backend("backend", intstr.FromInt(80)),
+					},
+				},
+			},
+			add: []*v2.Listener{{
+				Name:    ENVOY_HTTP_LISTENER,
+				Address: socketaddress("0.0.0.0", 8080),
+				FilterChains: []listener.FilterChain{
+					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, false, 15*time.Second, 0)),
+				},
+			}},
+			remove: nil,
+		},
+		"drain timeout": {
+			ListenerCache: ListenerCache{
+				DrainTimeout: 15 * time.Minute,
+			},
+			ingresses: map[metadata]*v1beta1.Ingress{
+				metadata{namespace: "default", name: "simple"}: {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "simple",
+						Namespace: "default",
+					},
+					Spec: v1beta1.IngressSpec{
+						Backend: backend("backend", intstr.FromInt(80)),
+					},
+				},
+			},
+			add: []*v2.Listener{{
+				Name:    ENVOY_HTTP_LISTENER,
+				Address: socketaddress("0.0.0.0", 8080),
+				FilterChains: []listener.FilterChain{
+					filterchain(false, httpfilter(ENVOY_HTTP_LISTENER, false, 0, 15*time.Minute)),
 				},
 			}},
 			remove: nil,
@@ -257,7 +306,7 @@ func TestRecomputeTLSListener(t *testing.T) {
 						Data: secretdata("certificate", "key"),
 					}, "h2", "http/1.1"),
 					Filters: []listener.Filter{
-						httpfilter(ENVOY_HTTPS_LISTENER, false),
+						httpfilter(ENVOY_HTTPS_LISTENER, false, 0, 0),
 					},
 				}},
 			}},
@@ -334,7 +383,7 @@ func TestRecomputeTLSListener(t *testing.T) {
 						Data: secretdata("certificate", "key"),
 					}, "h2", "http/1.1"),
 					Filters: []listener.Filter{
-						httpfilter(ENVOY_HTTPS_LISTENER, false),
+						httpfilter(ENVOY_HTTPS_LISTENER, false, 0, 0),
 					},
 				}},
 			}},
@@ -382,7 +431,7 @@ func TestRecomputeTLSListener(t *testing.T) {
 						Data: secretdata("certificate", "key"),
 					}, "h2", "http/1.1"),
 					Filters: []listener.Filter{
-						httpfilter(ENVOY_HTTPS_LISTENER, false),
+						httpfilter(ENVOY_HTTPS_LISTENER, false, 0, 0),
 					},
 					UseProxyProto: &types.BoolValue{Value: true},
 				}},
@@ -430,7 +479,101 @@ func TestRecomputeTLSListener(t *testing.T) {
 						Data: secretdata("certificate", "key"),
 					}, "h2", "http/1.1"),
 					Filters: []listener.Filter{
-						httpfilter(ENVOY_HTTPS_LISTENER, true),
+						httpfilter(ENVOY_HTTPS_LISTENER, true, 0, 0),
+					},
+				}},
+			}},
+		},
+		"idle timeout": {
+			ListenerCache: ListenerCache{
+				IdleTimeout: 15 * time.Second,
+			},
+			ingresses: map[metadata]*v1beta1.Ingress{
+				metadata{namespace: "default", name: "simple"}: {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "simple",
+						Namespace: "default",
+					},
+					Spec: v1beta1.IngressSpec{
+						TLS: []v1beta1.IngressTLS{{
+							Hosts:      []string{"whatever.example.com"},
+							SecretName: "secret",
+						}},
+						Backend: backend("backend", intstr.FromInt(80)),
+					},
+				},
+			},
+			secrets: map[metadata]*v1.Secret{
+				metadata{namespace: "default", name: "secret"}: {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						v1.TLSCertKey:       []byte("certificate"),
+						v1.TLSPrivateKeyKey: []byte("key"),
+					},
+				},
+			},
+			add: []*v2.Listener{{
+				Name:    ENVOY_HTTPS_LISTENER,
+				Address: socketaddress("0.0.0.0", 8443),
+				FilterChains: []listener.FilterChain{{
+					FilterChainMatch: &listener.FilterChainMatch{
+						SniDomains: []string{"whatever.example.com"},
+					},
+					TlsContext: tlscontext(&v1.Secret{
+						Data: secretdata("certificate", "key"),
+					}, "h2", "http/1.1"),
+					Filters: []listener.Filter{
+						httpfilter(ENVOY_HTTPS_LISTENER, false, 15*time.Second, 0),
+					},
+				}},
+			}},
+		},
+		"drain timeout": {
+			ListenerCache: ListenerCache{
+				DrainTimeout: 15 * time.Minute,
+			},
+			ingresses: map[metadata]*v1beta1.Ingress{
+				metadata{namespace: "default", name: "simple"}: {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "simple",
+						Namespace: "default",
+					},
+					Spec: v1beta1.IngressSpec{
+						TLS: []v1beta1.IngressTLS{{
+							Hosts:      []string{"whatever.example.com"},
+							SecretName: "secret",
+						}},
+						Backend: backend("backend", intstr.FromInt(80)),
+					},
+				},
+			},
+			secrets: map[metadata]*v1.Secret{
+				metadata{namespace: "default", name: "secret"}: {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						v1.TLSCertKey:       []byte("certificate"),
+						v1.TLSPrivateKeyKey: []byte("key"),
+					},
+				},
+			},
+			add: []*v2.Listener{{
+				Name:    ENVOY_HTTPS_LISTENER,
+				Address: socketaddress("0.0.0.0", 8443),
+				FilterChains: []listener.FilterChain{{
+					FilterChainMatch: &listener.FilterChainMatch{
+						SniDomains: []string{"whatever.example.com"},
+					},
+					TlsContext: tlscontext(&v1.Secret{
+						Data: secretdata("certificate", "key"),
+					}, "h2", "http/1.1"),
+					Filters: []listener.Filter{
+						httpfilter(ENVOY_HTTPS_LISTENER, false, 0, 15*time.Minute),
 					},
 				}},
 			}},

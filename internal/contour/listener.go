@@ -14,6 +14,8 @@
 package contour
 
 import (
+	"time"
+
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -74,6 +76,16 @@ type ListenerCache struct {
 	// If not set, defaults to ""
 	DefaultTLSSecretNamespace string
 
+	// IdleTimeout defines the default Listener level idle_timeout exposed
+	// by http_connection_manager
+	// If not set, defaults to 0
+	IdleTimeout time.Duration
+
+	// DrainTimeout defines the default Listener level drain_timeout exposed
+	// by http_connection_manager
+	// If not set, defaults to 0
+	DrainTimeout time.Duration
+
 	listenerCache
 	Cond
 }
@@ -122,7 +134,7 @@ func (lc *ListenerCache) recomputeListener0(ingresses map[metadata]*v1beta1.Ingr
 	}
 	if valid > 0 {
 		l.FilterChains = []listener.FilterChain{
-			filterchain(lc.UseProxyProto, httpfilter(ENVOY_HTTP_LISTENER, lc.EnableTracing)),
+			filterchain(lc.UseProxyProto, httpfilter(ENVOY_HTTP_LISTENER, lc.EnableTracing, lc.IdleTimeout, lc.DrainTimeout)),
 		}
 	}
 	// TODO(dfc) some annotations may require the Ingress to no appear on
@@ -167,7 +179,7 @@ func (lc *ListenerCache) recomputeTLSListener0(ingresses map[metadata]*v1beta1.I
 	}
 
 	filters := []listener.Filter{
-		httpfilter(ENVOY_HTTPS_LISTENER, lc.EnableTracing),
+		httpfilter(ENVOY_HTTPS_LISTENER, lc.EnableTracing, lc.IdleTimeout, lc.DrainTimeout),
 	}
 
 	for _, i := range ingresses {
@@ -282,7 +294,7 @@ func tlscontext(secret *v1.Secret, alpnprotos ...string) *auth.DownstreamTlsCont
 	}
 }
 
-func httpfilter(routename string, enabletracing bool) listener.Filter {
+func httpfilter(routename string, enabletracing bool, idletimeout, draintimeout time.Duration) listener.Filter {
 	filter := listener.Filter{
 		Name: httpFilter,
 		Config: &types.Struct{
@@ -328,6 +340,12 @@ func httpfilter(routename string, enabletracing bool) listener.Filter {
 			"operation_name": sv("egress"),
 		})
 	}
+	if idletimeout > 0 {
+		filter.Config.Fields["idle_timeout"] = tv(idletimeout)
+	}
+	if draintimeout > 0 {
+		filter.Config.Fields["drain_timeout"] = tv(draintimeout)
+	}
 	return filter
 }
 
@@ -354,4 +372,21 @@ func st(m map[string]*types.Value) *types.Value {
 }
 func lv(v ...*types.Value) *types.Value {
 	return &types.Value{Kind: &types.Value_ListValue{ListValue: &types.ListValue{Values: v}}}
+}
+
+func tv(d time.Duration) *types.Value {
+	if d > 0 {
+		v := d.Seconds()
+		m := map[string]*types.Value{}
+		secs := int64(v)
+		nanos := int32(1e9 * (v - float64(secs)))
+		if secs > 0 {
+			m["seconds"] = &types.Value{Kind: &types.Value_NumberValue{NumberValue: float64(secs)}}
+		}
+		if nanos > 0 {
+			m["nanos"] = &types.Value{Kind: &types.Value_NumberValue{NumberValue: float64(nanos)}}
+		}
+		return st(m)
+	}
+	return nil
 }

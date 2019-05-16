@@ -85,6 +85,8 @@ func main() {
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&t.UseProxyProto)
 	serve.Flag("ingress-class-name", "Contour IngressClass name").StringVar(&t.IngressClass)
 	serve.Flag("default-tls-secret", "Default TLS secret, <namespace>/<name>").SetValue(&r)
+	serve.Flag("idle-timeout", "Set idle_timeout for all listeners").DurationVar(&t.IdleTimeout)
+	serve.Flag("drain-timeout", "Set drain_timeout for all listeners").DurationVar(&t.DrainTimeout)
 
 	args := os.Args[1:]
 	switch kingpin.MustParse(app.Parse(args)) {
