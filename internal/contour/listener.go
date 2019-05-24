@@ -72,6 +72,11 @@ type ListenerVisitorConfig struct {
 	// spans for egress traffic
 	EnableTracing bool
 
+	// IdleTimeout configures all listeners with a default request
+	// timeout to protect against resource issues related to stalled
+	// requests
+	IdleTimeout time.Duration
+
 	// RequestTimeout configures all listeners with a default request
 	// timeout to protect against resource issues related to long
 	// requests
@@ -247,7 +252,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 			ENVOY_HTTP_LISTENER,
 			lvc.httpAddress(), lvc.httpPort(),
 			proxyProtocol(lvc.UseProxyProto),
-			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.RequestTimeout, lvc.EnableTracing),
+			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.IdleTimeout, lvc.RequestTimeout, lvc.EnableTracing),
 		)
 
 	}
@@ -282,7 +287,7 @@ func (v *listenerVisitor) visit(vertex dag.Vertex) {
 		v.http = true
 	case *dag.SecureVirtualHost:
 		filters := []listener.Filter{
-			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.RequestTimeout, v.EnableTracing),
+			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.IdleTimeout, v.RequestTimeout, v.EnableTracing),
 		}
 		alpnProtos := []string{"h2", "http/1.1"}
 		if vh.VirtualHost.TCPProxy != nil {
