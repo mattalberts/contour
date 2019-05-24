@@ -131,6 +131,9 @@ type TimeoutPolicy struct {
 	// Timeout for receiving a response from the server after processing a request from client.
 	// If not supplied the timeout duration is undefined.
 	Request string `json:"request"`
+
+	// MaxGrpc provides grpc servers with an upper bound for request handling.
+	MaxGrpc string `json:"max_grpc"`
 }
 
 // RetryPolicy define the attributes associated with retrying policy

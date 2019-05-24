@@ -14,9 +14,10 @@ package envoy
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"sort"
 	"time"
+
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
@@ -28,9 +29,10 @@ import (
 // weighted cluster.
 func RouteRoute(r *dag.Route, clusters []*dag.Cluster) *route.Route_Route {
 	ra := route.RouteAction{
-		RetryPolicy:   retryPolicy(r),
-		Timeout:       timeout(r),
-		PrefixRewrite: r.PrefixRewrite,
+		RetryPolicy:    retryPolicy(r),
+		Timeout:        timeout(r),
+		PrefixRewrite:  r.PrefixRewrite,
+		MaxGrpcTimeout: maxGrpcTimeout(r),
 	}
 
 	if r.Websocket {
@@ -71,6 +73,24 @@ func timeout(r *dag.Route) *time.Duration {
 		return duration(0)
 	default:
 		return duration(r.TimeoutPolicy.Timeout)
+	}
+}
+
+func maxGrpcTimeout(r *dag.Route) *time.Duration {
+	if r.TimeoutPolicy == nil {
+		return nil
+	}
+
+	switch r.TimeoutPolicy.MaxGrpcTimeout {
+	case 0:
+		// no timeout specified
+		return nil
+	case -1:
+		// infinite timeout, set timeout value to a pointer to zero which tells
+		// envoy "infinite timeout"
+		return duration(0)
+	default:
+		return duration(r.TimeoutPolicy.MaxGrpcTimeout)
 	}
 }
 

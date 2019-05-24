@@ -427,6 +427,77 @@ func TestDAGInsert(t *testing.T) {
 				}}}},
 	}
 
+	// i12g has an invalid max grpc timeout
+	i12g := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/max-grpc-timeout": "peanut",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i12h has a reasonable max grpc timeout
+	i12h := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/max-grpc-timeout": "1m30s", // 90 seconds y'all
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i12i has an unreasonable max grpc timeout
+	i12i := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/max-grpc-timeout": "infinite",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{{Path: "/",
+						Backend: v1beta1.IngressBackend{ServiceName: "kuard",
+							ServicePort: intstr.FromString("http")},
+					}}},
+				}}}},
+	}
+
 	// i13 a and b are a pair of ingresses for the same vhost
 	// they represent a tricky way over 'overlaying' routes from one
 	// ingress onto another
@@ -1160,6 +1231,72 @@ func TestDAGInsert(t *testing.T) {
 				Match: "/",
 				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
 					Request: "infinite",
+				},
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			}},
+		},
+	}
+
+	ir16g := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-com",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "*",
+			},
+			Routes: []ingressroutev1.Route{{
+				Match: "/",
+				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
+					MaxGrpc: "peanut",
+				},
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			}},
+		},
+	}
+
+	ir16h := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-com",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "*",
+			},
+			Routes: []ingressroutev1.Route{{
+				Match: "/",
+				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
+					MaxGrpc: "1m30s", // 90 seconds y'all
+				},
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			}},
+		},
+	}
+
+	ir16i := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-com",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "*",
+			},
+			Routes: []ingressroutev1.Route{{
+				Match: "/",
+				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
+					MaxGrpc: "infinite",
 				},
 				Services: []ingressroutev1.Service{{
 					Name: "kuard",
@@ -2297,6 +2434,126 @@ func TestDAGInsert(t *testing.T) {
 							Clusters: clustermap(s1),
 							TimeoutPolicy: &TimeoutPolicy{
 								Timeout: -1,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingress w/ invalid max grpc timeout annotation": {
+			objs: []interface{}{
+				i12g,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								MaxGrpcTimeout: -1, // invalid max grpc timeout equals infinity ¯\_(ツ)_/¯.
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingressroute w/ invalid max grpc timeoutpolicy": {
+			objs: []interface{}{
+				ir16g,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								MaxGrpcTimeout: -1, // invalid max grpc timeout equals infinity ¯\_(ツ)_/¯.
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingress w/ valid max grpc timeout annotation": {
+			objs: []interface{}{
+				i12h,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								MaxGrpcTimeout: 90 * time.Second,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingressroute w/ valid max grpc timeoutpolicy": {
+			objs: []interface{}{
+				ir16h,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								MaxGrpcTimeout: 90 * time.Second,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingress w/ infinite max grpc timeout annotation": {
+			objs: []interface{}{
+				i12i,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								MaxGrpcTimeout: -1,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingressroute w/ infinite max grpc timeoutpolicy": {
+			objs: []interface{}{
+				ir16i,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								MaxGrpcTimeout: -1,
 							},
 						}),
 					),

@@ -231,6 +231,40 @@ func TestRouteRoute(t *testing.T) {
 				},
 			},
 		},
+		"max-grpc-timeout 90s": {
+			route: &dag.Route{
+				Prefix: "/",
+				TimeoutPolicy: &dag.TimeoutPolicy{
+					MaxGrpcTimeout: 90 * time.Second,
+				},
+			},
+			clusters: []*dag.Cluster{c1},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					MaxGrpcTimeout: duration(90 * time.Second),
+				},
+			},
+		},
+		"max-grpc-timeout infinity": {
+			route: &dag.Route{
+				Prefix: "/",
+				TimeoutPolicy: &dag.TimeoutPolicy{
+					MaxGrpcTimeout: -1,
+				},
+			},
+			clusters: []*dag.Cluster{c1},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					MaxGrpcTimeout: duration(0),
+				},
+			},
+		},
 	}
 
 	for name, tc := range tests {

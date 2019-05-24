@@ -36,6 +36,7 @@ const (
 	annotationRetryOn            = "contour.heptio.com/retry-on"
 	annotationNumRetries         = "contour.heptio.com/num-retries"
 	annotationPerTryTimeout      = "contour.heptio.com/per-try-timeout"
+	annotationMaxGrpcTimeout     = "contour.heptio.com/max-grpc-timeout"
 )
 
 // parseAnnotation parses the annotation map for the supplied key.

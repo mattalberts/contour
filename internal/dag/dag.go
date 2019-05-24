@@ -79,6 +79,10 @@ type TimeoutPolicy struct {
 	// A timeout of -1 represents "infinity"
 	// TODO(dfc) should this move to service?
 	Timeout time.Duration
+
+	// MaxGrpcTimeout provides grpc servers with an upper
+	// bound for request handling
+	MaxGrpcTimeout time.Duration
 }
 
 // RetryPolicy defines the retry / number / timeout options

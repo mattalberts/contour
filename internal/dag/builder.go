@@ -20,8 +20,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -50,6 +51,10 @@ type Builder struct {
 	// presents Envoy at the edge network.
 	// If not supplied, defaults to 443.
 	ExternalSecurePort int
+
+	// MaxGrpcTimeout configures a default gRPC
+	// timeout for all routes.
+	MaxGrpcTimeout time.Duration
 }
 
 // Build builds a new *DAG.
@@ -293,7 +298,7 @@ func (b *builder) compute() *DAG {
 }
 
 // prefixRoute returns a new dag.Route for the (ingress,prefix) tuple.
-func prefixRoute(ingress *v1beta1.Ingress, prefix string) *Route {
+func prefixRoute(ingress *v1beta1.Ingress, prefix string, maxGrpcTimeout time.Duration) *Route {
 	// compute websocket enabled routes
 	wr := websocketRoutes(ingress)
 
@@ -313,12 +318,20 @@ func prefixRoute(ingress *v1beta1.Ingress, prefix string) *Route {
 	}
 
 	var timeout *TimeoutPolicy
-	if request, ok := ingress.Annotations[annotationRequestTimeout]; ok {
-		// if the request timeout annotation is present on this ingress
-		// construct and use the ingressroute timeout policy logic.
-		timeout = timeoutPolicy(&ingressroutev1.TimeoutPolicy{
-			Request: request,
-		})
+	{
+		n := 0
+		tp := &TimeoutPolicy{}
+		if val, ok := ingress.Annotations[annotationRequestTimeout]; ok {
+			tp.Timeout = parseTimeout(val)
+			n++
+		}
+		if val, ok := ingress.Annotations[annotationMaxGrpcTimeout]; ok {
+			tp.MaxGrpcTimeout = parseTimeoutWithDefault(val, maxGrpcTimeout)
+			n++
+		}
+		if n > 0 {
+			timeout = tp
+		}
 	}
 
 	return &Route{
@@ -464,7 +477,7 @@ func (b *builder) computeIngresses() {
 			host := stringOrDefault(rule.Host, "*")
 			for _, httppath := range httppaths(rule) {
 				prefix := stringOrDefault(httppath.Path, "/")
-				r := prefixRoute(ing, prefix)
+				r := prefixRoute(ing, prefix, b.source.MaxGrpcTimeout)
 				be := httppath.Backend
 				m := meta{name: be.ServiceName, namespace: ing.Namespace}
 				if s := b.lookupHTTPService(m, be.ServicePort, "", nil); s != nil {
@@ -658,7 +671,7 @@ func (b *builder) processRoutes(ir *ingressroutev1.IngressRoute, prefixMatch str
 				Websocket:     route.EnableWebsockets,
 				HTTPSUpgrade:  routeEnforceTLS(enforceTLS, route.PermitInsecure),
 				PrefixRewrite: route.PrefixRewrite,
-				TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy),
+				TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy, b.source.MaxGrpcTimeout),
 				RetryPolicy:   retryPolicy(route.RetryPolicy),
 			}
 			for _, service := range route.Services {
