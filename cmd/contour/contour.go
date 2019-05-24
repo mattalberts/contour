@@ -149,6 +149,7 @@ func main() {
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ch.EnableTracing)
 	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&reh.MaxGrpcTimeout)
 	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&reh.MaxGrpcTimeout)
+	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ch.DrainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ch.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ch.RequestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ch.StreamIdleTimeout)

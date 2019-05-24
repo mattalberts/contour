@@ -65,7 +65,7 @@ func Listener(name, address string, port int, lf []listener.ListenerFilter, filt
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
 // for the supplied route and access log.
-func HTTPConnectionManager(routename, accessLogPath string, idleTimeout, requestTimeout, streamIdleTimeout time.Duration, enableTracing bool) listener.Filter {
+func HTTPConnectionManager(routename, accessLogPath string, drainTimeout, idleTimeout, requestTimeout, streamIdleTimeout time.Duration, enableTracing bool) listener.Filter {
 	f := listener.Filter{
 		Name: util.HTTPConnectionManager,
 		ConfigType: &listener.Filter_Config{
@@ -113,6 +113,9 @@ func HTTPConnectionManager(routename, accessLogPath string, idleTimeout, request
 		f.ConfigType.(*listener.Filter_Config).Config.Fields["tracing"] = st(map[string]*types.Value{
 			"operation_name": sv("egress"),
 		})
+	}
+	if drainTimeout > 0 {
+		f.ConfigType.(*listener.Filter_Config).Config.Fields["drain_timeout"] = tv(drainTimeout)
 	}
 	if idleTimeout > 0 {
 		f.ConfigType.(*listener.Filter_Config).Config.Fields["idle_timeout"] = tv(idleTimeout)
