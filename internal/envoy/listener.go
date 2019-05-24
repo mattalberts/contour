@@ -15,8 +15,9 @@ package envoy
 
 import (
 	"sort"
+	"time"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/pkg/util"
@@ -64,7 +65,7 @@ func Listener(name, address string, port int, lf []listener.ListenerFilter, filt
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
 // for the supplied route and access log.
-func HTTPConnectionManager(routename, accessLogPath string, enableTracing bool) listener.Filter {
+func HTTPConnectionManager(routename, accessLogPath string, requestTimeout time.Duration, enableTracing bool) listener.Filter {
 	f := listener.Filter{
 		Name: util.HTTPConnectionManager,
 		ConfigType: &listener.Filter_Config{
@@ -112,6 +113,9 @@ func HTTPConnectionManager(routename, accessLogPath string, enableTracing bool) 
 		f.ConfigType.(*listener.Filter_Config).Config.Fields["tracing"] = st(map[string]*types.Value{
 			"operation_name": sv("egress"),
 		})
+	}
+	if requestTimeout > 0 {
+		f.ConfigType.(*listener.Filter_Config).Config.Fields["request_timeout"] = tv(requestTimeout)
 	}
 	return f
 }
@@ -218,4 +222,21 @@ func lv(v ...*types.Value) *types.Value {
 
 func nv(n float64) *types.Value {
 	return &types.Value{Kind: &types.Value_NumberValue{NumberValue: n}}
+}
+
+func tv(d time.Duration) *types.Value {
+	if d > 0 {
+		v := d.Seconds()
+		m := map[string]*types.Value{}
+		secs := int64(v)
+		nanos := int32(1e9 * (v - float64(secs)))
+		if secs > 0 {
+			m["seconds"] = &types.Value{Kind: &types.Value_NumberValue{NumberValue: float64(secs)}}
+		}
+		if nanos > 0 {
+			m["nanos"] = &types.Value{Kind: &types.Value_NumberValue{NumberValue: float64(nanos)}}
+		}
+		return st(m)
+	}
+	return nil
 }

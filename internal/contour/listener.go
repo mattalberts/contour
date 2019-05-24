@@ -16,6 +16,7 @@ package contour
 import (
 	"sort"
 	"sync"
+	"time"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -70,6 +71,11 @@ type ListenerVisitorConfig struct {
 	// EnableTracing configures all listeners to generate opentracing
 	// spans for egress traffic
 	EnableTracing bool
+
+	// RequestTimeout configures all listeners with a default request
+	// timeout to protect against resource issues related to long
+	// requests
+	RequestTimeout time.Duration
 }
 
 // httpAddress returns the port for the HTTP (non TLS)
@@ -241,7 +247,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 			ENVOY_HTTP_LISTENER,
 			lvc.httpAddress(), lvc.httpPort(),
 			proxyProtocol(lvc.UseProxyProto),
-			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.EnableTracing),
+			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.RequestTimeout, lvc.EnableTracing),
 		)
 
 	}
@@ -276,7 +282,7 @@ func (v *listenerVisitor) visit(vertex dag.Vertex) {
 		v.http = true
 	case *dag.SecureVirtualHost:
 		filters := []listener.Filter{
-			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.EnableTracing),
+			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.RequestTimeout, v.EnableTracing),
 		}
 		alpnProtos := []string{"h2", "http/1.1"}
 		if vh.VirtualHost.TCPProxy != nil {
