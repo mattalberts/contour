@@ -47,6 +47,8 @@ var ingressrouteRootNamespaceFlag string
 
 func main() {
 	log := logrus.StandardLogger()
+	log.Out = os.Stderr
+
 	app := kingpin.New("contour", "Heptio Contour Kubernetes ingress controller.")
 	var config envoy.BootstrapConfig
 	bootstrap := app.Command("bootstrap", "Generate bootstrap configuration.")
@@ -83,6 +85,7 @@ func main() {
 	serve := app.Command("serve", "Serve xDS API traffic")
 	inCluster := serve.Flag("incluster", "use in cluster configuration.").Bool()
 	kubeconfig := serve.Flag("kubeconfig", "path to kubeconfig (if not in running inside a cluster)").Default(filepath.Join(os.Getenv("HOME"), ".kube", "config")).String()
+	verbose := serve.Flag("v", "enable logging at specified level").Default("3").Int()
 	xdsAddr := serve.Flag("xds-address", "xDS gRPC API address").Default("127.0.0.1").String()
 	xdsPort := serve.Flag("xds-port", "xDS gRPC API port").Default("8001").Int()
 
@@ -163,7 +166,6 @@ func main() {
 		stream := client.RouteStream()
 		watchstream(stream, cache.SecretType, resources)
 	case serve.FullCommand():
-		log.Infof("args: %v", args)
 		var g workgroup.Group
 
 		// client-go uses glog which requires initialisation as a side effect of calling
@@ -177,6 +179,10 @@ func main() {
 		// whole process since the path may not be accessible in
 		// container environment. See #959
 		_ = flag.Lookup("logtostderr").Value.Set("true")
+		_ = flag.Lookup("v").Value.Set(strconv.Itoa(*verbose))
+
+		log.SetLevel(logruslevel(*verbose))
+		log.Infof("args: %v", args)
 
 		reh.IngressRouteRootNamespaces = parseRootNamespaces(ingressrouteRootNamespaceFlag)
 
@@ -298,4 +304,16 @@ func getEnv(key, fallback string) string {
 		value = fallback
 	}
 	return value
+}
+
+// bridge verbose flag into a logrus.Level
+func logruslevel(v int) (l logrus.Level) {
+	if v >= 0 && v <= 5 {
+		l = logrus.AllLevels[v]
+	} else if v > 5 {
+		l = logrus.DebugLevel
+	} else {
+		l = logrus.PanicLevel
+	}
+	return
 }
