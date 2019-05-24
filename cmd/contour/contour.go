@@ -151,6 +151,7 @@ func main() {
 	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&reh.MaxGrpcTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ch.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ch.RequestTimeout)
+	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ch.StreamIdleTimeout)
 
 	args := os.Args[1:]
 	switch kingpin.MustParse(app.Parse(args)) {

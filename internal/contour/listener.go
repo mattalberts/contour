@@ -81,6 +81,11 @@ type ListenerVisitorConfig struct {
 	// timeout to protect against resource issues related to long
 	// requests
 	RequestTimeout time.Duration
+
+	// StreamIdleTimeout configures all listeners with a default request
+	// timeout to protect against resource issues related to stalled
+	// requests
+	StreamIdleTimeout time.Duration
 }
 
 // httpAddress returns the port for the HTTP (non TLS)
@@ -252,7 +257,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 			ENVOY_HTTP_LISTENER,
 			lvc.httpAddress(), lvc.httpPort(),
 			proxyProtocol(lvc.UseProxyProto),
-			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.IdleTimeout, lvc.RequestTimeout, lvc.EnableTracing),
+			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.IdleTimeout, lvc.RequestTimeout, lvc.StreamIdleTimeout, lvc.EnableTracing),
 		)
 
 	}
@@ -287,7 +292,7 @@ func (v *listenerVisitor) visit(vertex dag.Vertex) {
 		v.http = true
 	case *dag.SecureVirtualHost:
 		filters := []listener.Filter{
-			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.IdleTimeout, v.RequestTimeout, v.EnableTracing),
+			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.IdleTimeout, v.RequestTimeout, v.StreamIdleTimeout, v.EnableTracing),
 		}
 		alpnProtos := []string{"h2", "http/1.1"}
 		if vh.VirtualHost.TCPProxy != nil {
