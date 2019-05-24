@@ -64,8 +64,8 @@ func Listener(name, address string, port int, lf []listener.ListenerFilter, filt
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
 // for the supplied route and access log.
-func HTTPConnectionManager(routename, accessLogPath string) listener.Filter {
-	return listener.Filter{
+func HTTPConnectionManager(routename, accessLogPath string, enableTracing bool) listener.Filter {
+	f := listener.Filter{
 		Name: util.HTTPConnectionManager,
 		ConfigType: &listener.Filter_Config{
 			Config: &types.Struct{
@@ -108,6 +108,12 @@ func HTTPConnectionManager(routename, accessLogPath string) listener.Filter {
 			},
 		},
 	}
+	if enableTracing {
+		f.ConfigType.(*listener.Filter_Config).Config.Fields["tracing"] = st(map[string]*types.Value{
+			"operation_name": sv("egress"),
+		})
+	}
+	return f
 }
 
 // TCPProxy creates a new TCPProxy filter.
