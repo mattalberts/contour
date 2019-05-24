@@ -80,6 +80,9 @@ type TimeoutPolicy struct {
 	// TODO(dfc) should this move to service?
 	Timeout time.Duration
 
+	// IdleTimeout idle timeout for request handling
+	IdleTimeout time.Duration
+
 	// MaxGrpcTimeout provides grpc servers with an upper
 	// bound for request handling
 	MaxGrpcTimeout time.Duration

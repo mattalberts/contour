@@ -132,6 +132,9 @@ type TimeoutPolicy struct {
 	// If not supplied the timeout duration is undefined.
 	Request string `json:"request"`
 
+	// Idle timeout for upstream requests.
+	Idle string `json:"idle"`
+
 	// MaxGrpc provides grpc servers with an upper bound for request handling.
 	MaxGrpc string `json:"max_grpc"`
 }

@@ -122,6 +122,34 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 				Timeout: -1,
 			},
 		},
+		"valid idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "1m30s",
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 90 * time.Second,
+			},
+		},
+		"invalid idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "90", // 90 what?
+			},
+			want: &TimeoutPolicy{
+				// the documentation for an invalid timeout says the duration will
+				// be undefined. In practice we take the spec from the
+				// contour.heptio.com/request-timeout annotation, which is defined
+				// to choose infinite when its valid cannot be parsed.
+				IdleTimeout: -1,
+			},
+		},
+		"infinite idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "infinite",
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: -1,
+			},
+		},
 		"valid max grpc timeout": {
 			tp: &v1beta1.TimeoutPolicy{
 				MaxGrpc: "1m30s",
@@ -154,7 +182,7 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := timeoutPolicy(tc.tp, 0)
+			got := timeoutPolicy(tc.tp, 0, 0)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}

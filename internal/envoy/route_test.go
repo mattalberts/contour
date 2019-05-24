@@ -231,6 +231,40 @@ func TestRouteRoute(t *testing.T) {
 				},
 			},
 		},
+		"idle-timeout 90s": {
+			route: &dag.Route{
+				Prefix: "/",
+				TimeoutPolicy: &dag.TimeoutPolicy{
+					IdleTimeout: 90 * time.Second,
+				},
+			},
+			clusters: []*dag.Cluster{c1},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					IdleTimeout: duration(90 * time.Second),
+				},
+			},
+		},
+		"idle-timeout infinity": {
+			route: &dag.Route{
+				Prefix: "/",
+				TimeoutPolicy: &dag.TimeoutPolicy{
+					IdleTimeout: -1,
+				},
+			},
+			clusters: []*dag.Cluster{c1},
+			want: &route.Route_Route{
+				Route: &route.RouteAction{
+					ClusterSpecifier: &route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					IdleTimeout: duration(0),
+				},
+			},
+		},
 		"max-grpc-timeout 90s": {
 			route: &dag.Route{
 				Prefix: "/",

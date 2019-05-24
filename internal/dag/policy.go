@@ -31,12 +31,13 @@ func retryPolicy(rp *v1beta1.RetryPolicy) *RetryPolicy {
 	}
 }
 
-func timeoutPolicy(tp *v1beta1.TimeoutPolicy, maxGrpcTimeout time.Duration) *TimeoutPolicy {
+func timeoutPolicy(tp *v1beta1.TimeoutPolicy, idleTimeout, maxGrpcTimeout time.Duration) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}
 	return &TimeoutPolicy{
 		Timeout:        parseTimeout(tp.Request),
+		IdleTimeout:    parseTimeoutWithDefault(tp.Idle, idleTimeout),
 		MaxGrpcTimeout: parseTimeoutWithDefault(tp.MaxGrpc, maxGrpcTimeout),
 	}
 }

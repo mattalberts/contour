@@ -26,6 +26,7 @@ const (
 	// set docs/annotations.md for details of how these annotations
 	// are applied by Contour.
 
+	annotationIdleTimeout        = "contour.heptio.com/idle-timeout"
 	annotationRequestTimeout     = "contour.heptio.com/request-timeout"
 	annotationWebsocketRoutes    = "contour.heptio.com/websocket-routes"
 	annotationUpstreamProtocol   = "contour.heptio.com/upstream-protocol"

@@ -427,6 +427,77 @@ func TestDAGInsert(t *testing.T) {
 				}}}},
 	}
 
+	// i12d has an invalid idle timeout
+	i12d := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/idle-timeout": "peanut",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i12e has a reasonable idle timeout
+	i12e := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/idle-timeout": "1m30s", // 90 seconds y'all
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{
+					HTTP: &v1beta1.HTTPIngressRuleValue{
+						Paths: []v1beta1.HTTPIngressPath{{
+							Path: "/",
+							Backend: v1beta1.IngressBackend{
+								ServiceName: "kuard",
+								ServicePort: intstr.FromString("http"),
+							},
+						}},
+					},
+				},
+			}},
+		},
+	}
+
+	// i12f has an unreasonable idle timeout
+	i12f := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "timeout",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"contour.heptio.com/idle-timeout": "infinite",
+			},
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{{
+				IngressRuleValue: v1beta1.IngressRuleValue{HTTP: &v1beta1.HTTPIngressRuleValue{
+					Paths: []v1beta1.HTTPIngressPath{{Path: "/",
+						Backend: v1beta1.IngressBackend{ServiceName: "kuard",
+							ServicePort: intstr.FromString("http")},
+					}}},
+				}}}},
+	}
+
 	// i12g has an invalid max grpc timeout
 	i12g := &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1231,6 +1302,72 @@ func TestDAGInsert(t *testing.T) {
 				Match: "/",
 				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
 					Request: "infinite",
+				},
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			}},
+		},
+	}
+
+	ir16d := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-com",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "*",
+			},
+			Routes: []ingressroutev1.Route{{
+				Match: "/",
+				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
+					Idle: "peanut",
+				},
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			}},
+		},
+	}
+
+	ir16e := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-com",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "*",
+			},
+			Routes: []ingressroutev1.Route{{
+				Match: "/",
+				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
+					Idle: "1m30s", // 90 seconds y'all
+				},
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			}},
+		},
+	}
+
+	ir16f := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-com",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "*",
+			},
+			Routes: []ingressroutev1.Route{{
+				Match: "/",
+				TimeoutPolicy: &ingressroutev1.TimeoutPolicy{
+					Idle: "infinite",
 				},
 				Services: []ingressroutev1.Service{{
 					Name: "kuard",
@@ -2434,6 +2571,126 @@ func TestDAGInsert(t *testing.T) {
 							Clusters: clustermap(s1),
 							TimeoutPolicy: &TimeoutPolicy{
 								Timeout: -1,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingress w/ invalid idle annotation": {
+			objs: []interface{}{
+				i12d,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								IdleTimeout: -1, // invalid idle timeout equals infinity ¯\_(ツ)_/¯.
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingressroute w/ invalid idle timeoutpolicy": {
+			objs: []interface{}{
+				ir16d,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								IdleTimeout: -1, // invalid idle timeout equals infinity ¯\_(ツ)_/¯.
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingress w/ valid idle timeout annotation": {
+			objs: []interface{}{
+				i12e,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								IdleTimeout: 90 * time.Second,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingressroute w/ valid idle timeoutpolicy": {
+			objs: []interface{}{
+				ir16e,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								IdleTimeout: 90 * time.Second,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingress w/ infinite idle timeout annotation": {
+			objs: []interface{}{
+				i12f,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								IdleTimeout: -1,
+							},
+						}),
+					),
+				},
+			),
+		},
+		"insert ingressroute w/ infinite idle timeoutpolicy": {
+			objs: []interface{}{
+				ir16f,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*", &Route{
+							Prefix:   "/",
+							Clusters: clustermap(s1),
+							TimeoutPolicy: &TimeoutPolicy{
+								IdleTimeout: -1,
 							},
 						}),
 					),
