@@ -33,6 +33,16 @@ type KubernetesCache struct {
 	// namespace.
 	IngressRouteRootNamespaces []string
 
+	// DefaultTLSSecretName defines a default certificate to use for tls
+	// termination. An Ingress spec secretName overrides this default.
+	// If not set, defaults to ""
+	DefaultTLSSecretName string
+
+	// DefaultTLSSecretNamespace defines a default certificate to use for
+	// tls termination. An Ingress spec secretName overrides this default.
+	// If not set, defaults to ""
+	DefaultTLSSecretNamespace string
+
 	mu sync.RWMutex
 
 	ingresses     map[meta]*v1beta1.Ingress
