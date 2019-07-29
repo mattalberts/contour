@@ -108,6 +108,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("envoy-service-https-port", "Kubernetes Service port for HTTPS requests").Default("8443").IntVar(&ctx.httpsPort)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&ctx.useProxyProto)
 
+	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
+
 	return serve, &ctx
 }
 
@@ -151,6 +153,8 @@ type serveContext struct {
 	httpsAddr      string
 	httpsPort      int
 	httpsAccessLog string
+
+	logLevel int
 }
 
 // tlsconfig returns a new *tls.Config. If the context is not properly configured

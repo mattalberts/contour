@@ -81,6 +81,7 @@ func main() {
 		// on top of any values sourced from -c's config file.
 		_, err := app.Parse(args)
 		check(err)
+		log.SetLevel(logruslevel(serveCtx.logLevel))
 		log.Infof("args: %v", args)
 		doServe(log, serveCtx)
 	default:
