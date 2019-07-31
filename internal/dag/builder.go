@@ -293,6 +293,10 @@ func prefixRoute(ingress *v1beta1.Ingress, prefix string, options RouteOptions) 
 			tp.Timeout = parseTimeout(val)
 			n++
 		}
+		if val, ok := ingress.Annotations[annotationMaxGrpcTimeout]; ok {
+			tp.MaxGrpcTimeout = parseTimeoutWithDefault(val, options.MaxGrpcTimeout)
+			n++
+		}
 		if n > 0 {
 			timeout = tp
 		}

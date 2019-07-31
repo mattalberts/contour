@@ -115,6 +115,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
+	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&ctx.routeMaxGrpcTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -161,12 +162,13 @@ type serveContext struct {
 	httpsPort      int
 	httpsAccessLog string
 
-	enableTracing     bool
-	drainTimeout      time.Duration
-	idleTimeout       time.Duration
-	requestTimeout    time.Duration
-	streamIdleTimeout time.Duration
-	logLevel          int
+	enableTracing       bool
+	drainTimeout        time.Duration
+	idleTimeout         time.Duration
+	requestTimeout      time.Duration
+	streamIdleTimeout   time.Duration
+	routeMaxGrpcTimeout time.Duration
+	logLevel            int
 }
 
 // tlsconfig returns a new *tls.Config. If the context is not properly configured
@@ -260,7 +262,9 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 		},
 		KubernetesCache: dag.KubernetesCache{
 			IngressRouteRootNamespaces: ctx.ingressRouteRootNamespaces(),
-			RouteOptions:               dag.RouteOptions{},
+			RouteOptions: dag.RouteOptions{
+				MaxGrpcTimeout: ctx.routeMaxGrpcTimeout,
+			},
 		},
 		IngressClass: ctx.ingressClass,
 		FieldLogger:  log.WithField("context", "resourceEventHandler"),
