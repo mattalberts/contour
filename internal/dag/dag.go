@@ -20,7 +20,7 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	ingressroutev1 "github.com/heptio/contour/apis/contour/v1beta1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // A DAG represents a directed acylic graph of objects representing the relationship
@@ -77,6 +77,9 @@ type TimeoutPolicy struct {
 	// TODO(dfc) should this move to service?
 	Timeout time.Duration
 
+	// IdleTimeout idle timeout for request handling
+	IdleTimeout time.Duration
+
 	// MaxGrpcTimeout provides grpc servers with an upper
 	// bound for request handling
 	MaxGrpcTimeout time.Duration
@@ -99,6 +102,7 @@ type RetryPolicy struct {
 
 // RouteOptions defines optional route defaults
 type RouteOptions struct {
+	IdleTimeout    time.Duration
 	MaxGrpcTimeout time.Duration
 }
 

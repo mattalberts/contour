@@ -30,6 +30,7 @@ func RouteRoute(r *dag.Route) *route.Route_Route {
 	ra := route.RouteAction{
 		RetryPolicy:    retryPolicy(r),
 		Timeout:        timeout(r),
+		IdleTimeout:    idleTimeout(r),
 		MaxGrpcTimeout: maxGrpcTimeout(r),
 		PrefixRewrite:  r.PrefixRewrite,
 		HashPolicy:     hashPolicy(r),
@@ -92,6 +93,24 @@ func timeout(r *dag.Route) *time.Duration {
 		return duration(0)
 	default:
 		return duration(r.TimeoutPolicy.Timeout)
+	}
+}
+
+func idleTimeout(r *dag.Route) *time.Duration {
+	if r.TimeoutPolicy == nil {
+		return nil
+	}
+
+	switch r.TimeoutPolicy.IdleTimeout {
+	case 0:
+		// no timeout specified
+		return nil
+	case -1:
+		// infinite timeout, set timeout value to a pointer to zero which tells
+		// envoy "infinite timeout"
+		return duration(0)
+	default:
+		return duration(r.TimeoutPolicy.IdleTimeout)
 	}
 }
 
