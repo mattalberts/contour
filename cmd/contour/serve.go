@@ -110,6 +110,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("envoy-service-https-port", "Kubernetes Service port for HTTPS requests").Default("8443").IntVar(&ctx.httpsPort)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&ctx.useProxyProto)
 
+	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.drainTimeout)
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
@@ -161,6 +162,7 @@ type serveContext struct {
 	httpsAccessLog string
 
 	enableTracing     bool
+	drainTimeout      time.Duration
 	idleTimeout       time.Duration
 	requestTimeout    time.Duration
 	streamIdleTimeout time.Duration
@@ -234,6 +236,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			HTTPSAccessLog: ctx.httpsAccessLog,
 			HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 				EnableTracing:     ctx.enableTracing,
+				DrainTimeout:      ctx.drainTimeout,
 				IdleTimeout:       ctx.idleTimeout,
 				RequestTimeout:    ctx.requestTimeout,
 				StreamIdleTimeout: ctx.streamIdleTimeout,
