@@ -114,12 +114,13 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 					// a Host: header. See #537.
 					AcceptHttp_10: true,
 				},
-				AccessLog:        FileAccessLog(accessLogPath),
-				UseRemoteAddress: &types.BoolValue{Value: true}, // TODO(jbeda) should this ever be false?
-				NormalizePath:    &types.BoolValue{Value: true},
-				IdleTimeout:      tvd(options.IdleTimeout, HTTPDefaultIdleTimeout),
-				RequestTimeout:   tv(options.RequestTimeout),
-				Tracing:          tracing(options.EnableTracing),
+				AccessLog:         FileAccessLog(accessLogPath),
+				UseRemoteAddress:  &types.BoolValue{Value: true}, // TODO(jbeda) should this ever be false?
+				NormalizePath:     &types.BoolValue{Value: true},
+				IdleTimeout:       tvd(options.IdleTimeout, HTTPDefaultIdleTimeout),
+				RequestTimeout:    tv(options.RequestTimeout),
+				StreamIdleTimeout: tv(options.StreamIdleTimeout),
+				Tracing:           tracing(options.EnableTracing),
 			}),
 		},
 	}
@@ -247,9 +248,10 @@ func tvd(d, v time.Duration) *time.Duration {
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	EnableTracing  bool
-	IdleTimeout    time.Duration
-	RequestTimeout time.Duration
+	EnableTracing     bool
+	IdleTimeout       time.Duration
+	RequestTimeout    time.Duration
+	StreamIdleTimeout time.Duration
 }
 
 // TCPProxyOptions defines optional configrations for tcp proxies

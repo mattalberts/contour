@@ -113,6 +113,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
+	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -159,10 +160,11 @@ type serveContext struct {
 	httpsPort      int
 	httpsAccessLog string
 
-	enableTracing  bool
-	idleTimeout    time.Duration
-	requestTimeout time.Duration
-	logLevel       int
+	enableTracing     bool
+	idleTimeout       time.Duration
+	requestTimeout    time.Duration
+	streamIdleTimeout time.Duration
+	logLevel          int
 }
 
 // tlsconfig returns a new *tls.Config. If the context is not properly configured
@@ -231,9 +233,10 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			HTTPSPort:      ctx.httpsPort,
 			HTTPSAccessLog: ctx.httpsAccessLog,
 			HTTPConnectionOptions: envoy.HTTPConnectionOptions{
-				EnableTracing:  ctx.enableTracing,
-				IdleTimeout:    ctx.idleTimeout,
-				RequestTimeout: ctx.requestTimeout,
+				EnableTracing:     ctx.enableTracing,
+				IdleTimeout:       ctx.idleTimeout,
+				RequestTimeout:    ctx.requestTimeout,
+				StreamIdleTimeout: ctx.streamIdleTimeout,
 			},
 			TCPProxyOptions: envoy.TCPProxyOptions{
 				IdleTimeout: ctx.idleTimeout,
