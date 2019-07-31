@@ -122,6 +122,7 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 				UseRemoteAddress: &types.BoolValue{Value: true}, // TODO(jbeda) should this ever be false?
 				NormalizePath:    &types.BoolValue{Value: true},
 				IdleTimeout:      idleTimeout(HTTPDefaultIdleTimeout),
+				Tracing:          tracing(options.EnableTracing),
 			}),
 		},
 	}
@@ -224,8 +225,18 @@ func any(pb proto.Message) *types.Any {
 	return any
 }
 
+func tracing(enableTracing bool) *http.HttpConnectionManager_Tracing {
+	if enableTracing {
+		return &http.HttpConnectionManager_Tracing{
+			OperationName: http.EGRESS,
+		}
+	}
+	return nil
+}
+
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
+	EnableTracing bool
 }
 
 // TCPProxyOptions defines optional configrations for tcp proxies

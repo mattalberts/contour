@@ -31,6 +31,7 @@ import (
 	"github.com/heptio/contour/internal/contour"
 	"github.com/heptio/contour/internal/dag"
 	"github.com/heptio/contour/internal/debug"
+	"github.com/heptio/contour/internal/envoy"
 	"github.com/heptio/contour/internal/grpc"
 	"github.com/heptio/contour/internal/httpsvc"
 	"github.com/heptio/contour/internal/k8s"
@@ -108,6 +109,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("envoy-service-https-port", "Kubernetes Service port for HTTPS requests").Default("8443").IntVar(&ctx.httpsPort)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&ctx.useProxyProto)
 
+	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -154,7 +156,8 @@ type serveContext struct {
 	httpsPort      int
 	httpsAccessLog string
 
-	logLevel int
+	enableTracing bool
+	logLevel      int
 }
 
 // tlsconfig returns a new *tls.Config. If the context is not properly configured
@@ -222,6 +225,9 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			HTTPSAddress:   ctx.httpsAddr,
 			HTTPSPort:      ctx.httpsPort,
 			HTTPSAccessLog: ctx.httpsAccessLog,
+			HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+				EnableTracing: ctx.enableTracing,
+			},
 		},
 		ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
 		FieldLogger:   log.WithField("context", "CacheHandler"),
