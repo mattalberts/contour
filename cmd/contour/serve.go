@@ -111,6 +111,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&ctx.useProxyProto)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
@@ -159,6 +160,7 @@ type serveContext struct {
 	httpsAccessLog string
 
 	enableTracing  bool
+	idleTimeout    time.Duration
 	requestTimeout time.Duration
 	logLevel       int
 }
@@ -230,7 +232,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			HTTPSAccessLog: ctx.httpsAccessLog,
 			HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 				EnableTracing:  ctx.enableTracing,
+				IdleTimeout:    ctx.idleTimeout,
 				RequestTimeout: ctx.requestTimeout,
+			},
+			TCPProxyOptions: envoy.TCPProxyOptions{
+				IdleTimeout: ctx.idleTimeout,
 			},
 		},
 		ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
