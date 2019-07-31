@@ -15,6 +15,7 @@ package contour
 
 import (
 	"testing"
+	"time"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -641,6 +642,65 @@ func TestListenerVisit(t *testing.T) {
 					TlsContext: tlscontext(auth.TlsParameters_TLSv1_1, "h2", "http/1.1"),
 					Filters: filters(envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, DEFAULT_HTTPS_ACCESS_LOG, envoy.HTTPConnectionOptions{
 						EnableTracing: true,
+					})),
+				}},
+			}),
+		},
+		"--request-timeout": {
+			ListenerVisitorConfig: ListenerVisitorConfig{
+				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+					RequestTimeout: func() (d time.Duration) {
+						d, _ = time.ParseDuration("1.5s")
+						return
+					}(),
+				},
+			},
+			objs: []interface{}{
+				&v1beta1.Ingress{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "simple",
+						Namespace: "default",
+					},
+					Spec: v1beta1.IngressSpec{
+						TLS: []v1beta1.IngressTLS{{
+							Hosts:      []string{"whatever.example.com"},
+							SecretName: "secret",
+						}},
+						Backend: &v1beta1.IngressBackend{
+							ServiceName: "kuard",
+							ServicePort: intstr.FromInt(8080),
+						},
+					},
+				},
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret",
+						Namespace: "default",
+					},
+					Type: "kubernetes.io/tls",
+					Data: secretdata("certificate", "key"),
+				},
+			},
+			want: listenermap(&v2.Listener{
+				Name:            ENVOY_HTTP_LISTENER,
+				Address:         *envoy.SocketAddress("0.0.0.0", 8080),
+				ListenerFilters: []listener.ListenerFilter{},
+				FilterChains: filterchain(envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, DEFAULT_HTTP_ACCESS_LOG, envoy.HTTPConnectionOptions{
+					RequestTimeout: 1500 * time.Millisecond,
+				})),
+			}, &v2.Listener{
+				Name:    ENVOY_HTTPS_LISTENER,
+				Address: *envoy.SocketAddress("0.0.0.0", 8443),
+				ListenerFilters: []listener.ListenerFilter{
+					envoy.TLSInspector(),
+				},
+				FilterChains: []listener.FilterChain{{
+					FilterChainMatch: &listener.FilterChainMatch{
+						ServerNames: []string{"whatever.example.com"},
+					},
+					TlsContext: tlscontext(auth.TlsParameters_TLSv1_1, "h2", "http/1.1"),
+					Filters: filters(envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, DEFAULT_HTTPS_ACCESS_LOG, envoy.HTTPConnectionOptions{
+						RequestTimeout: 1500 * time.Millisecond,
 					})),
 				}},
 			}),

@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	contourinformers "github.com/heptio/contour/apis/generated/informers/externalversions"
 	"github.com/heptio/contour/internal/contour"
@@ -110,6 +111,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&ctx.useProxyProto)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -156,8 +158,9 @@ type serveContext struct {
 	httpsPort      int
 	httpsAccessLog string
 
-	enableTracing bool
-	logLevel      int
+	enableTracing  bool
+	requestTimeout time.Duration
+	logLevel       int
 }
 
 // tlsconfig returns a new *tls.Config. If the context is not properly configured
@@ -226,7 +229,8 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			HTTPSPort:      ctx.httpsPort,
 			HTTPSAccessLog: ctx.httpsAccessLog,
 			HTTPConnectionOptions: envoy.HTTPConnectionOptions{
-				EnableTracing: ctx.enableTracing,
+				EnableTracing:  ctx.enableTracing,
+				RequestTimeout: ctx.requestTimeout,
 			},
 		},
 		ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
