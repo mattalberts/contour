@@ -260,6 +260,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 		},
 		KubernetesCache: dag.KubernetesCache{
 			IngressRouteRootNamespaces: ctx.ingressRouteRootNamespaces(),
+			RouteOptions:               dag.RouteOptions{},
 		},
 		IngressClass: ctx.ingressClass,
 		FieldLogger:  log.WithField("context", "resourceEventHandler"),

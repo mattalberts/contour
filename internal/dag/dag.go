@@ -93,6 +93,10 @@ type RetryPolicy struct {
 	PerTryTimeout time.Duration
 }
 
+// RouteOptions defines optional route defaults
+type RouteOptions struct {
+}
+
 // UpstreamValidation defines how to validate the certificate on the upstream service
 type UpstreamValidation struct {
 	// CACertificate holds a reference to the Secret containing the CA to be used to

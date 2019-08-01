@@ -32,6 +32,7 @@ type KubernetesCache struct {
 	// IngressRoutes can be defined. If empty, roots can be defined in any
 	// namespace.
 	IngressRouteRootNamespaces []string
+	RouteOptions               RouteOptions
 
 	mu sync.RWMutex
 

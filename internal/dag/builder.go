@@ -266,7 +266,7 @@ func (b *builder) compute() *DAG {
 }
 
 // prefixRoute returns a new dag.Route for the (ingress,prefix) tuple.
-func prefixRoute(ingress *v1beta1.Ingress, prefix string) *Route {
+func prefixRoute(ingress *v1beta1.Ingress, prefix string, options RouteOptions) *Route {
 	// compute websocket enabled routes
 	wr := websocketRoutes(ingress)
 
@@ -286,12 +286,16 @@ func prefixRoute(ingress *v1beta1.Ingress, prefix string) *Route {
 	}
 
 	var timeout *TimeoutPolicy
-	if request, ok := ingress.Annotations[annotationRequestTimeout]; ok {
-		// if the request timeout annotation is present on this ingress
-		// construct and use the ingressroute timeout policy logic.
-		timeout = timeoutPolicy(&ingressroutev1.TimeoutPolicy{
-			Request: request,
-		})
+	{
+		n := 0
+		tp := &TimeoutPolicy{}
+		if val, ok := ingress.Annotations[annotationRequestTimeout]; ok {
+			tp.Timeout = parseTimeout(val)
+			n++
+		}
+		if n > 0 {
+			timeout = tp
+		}
 	}
 
 	return &Route{
@@ -437,7 +441,7 @@ func (b *builder) computeIngresses() {
 			host := stringOrDefault(rule.Host, "*")
 			for _, httppath := range httppaths(rule) {
 				prefix := stringOrDefault(httppath.Path, "/")
-				r := prefixRoute(ing, prefix)
+				r := prefixRoute(ing, prefix, b.source.RouteOptions)
 				be := httppath.Backend
 				m := Meta{name: be.ServiceName, namespace: ing.Namespace}
 				if s := b.lookupHTTPService(m, be.ServicePort); s != nil {
@@ -649,7 +653,7 @@ func (b *builder) processRoutes(ir *ingressroutev1.IngressRoute, prefixMatch str
 				Websocket:     route.EnableWebsockets,
 				HTTPSUpgrade:  routeEnforceTLS(enforceTLS, route.PermitInsecure),
 				PrefixRewrite: route.PrefixRewrite,
-				TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy),
+				TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy, b.source.RouteOptions),
 				RetryPolicy:   retryPolicy(route.RetryPolicy),
 			}
 			for _, service := range route.Services {
