@@ -43,13 +43,13 @@ func TestListener(t *testing.T) {
 			name:    "http",
 			address: "0.0.0.0",
 			port:    9000,
-			f:       []listener.Filter{HTTPConnectionManager("http", "/dev/null")},
+			f:       []listener.Filter{HTTPConnectionManager("http", "/dev/null", HTTPConnectionOptions{})},
 			want: &v2.Listener{
 				Name:    "http",
 				Address: *SocketAddress("0.0.0.0", 9000),
 				FilterChains: []listener.FilterChain{{
 					Filters: []listener.Filter{
-						HTTPConnectionManager("http", "/dev/null"),
+						HTTPConnectionManager("http", "/dev/null", HTTPConnectionOptions{}),
 					},
 				}},
 			},
@@ -62,7 +62,7 @@ func TestListener(t *testing.T) {
 				ProxyProtocol(),
 			},
 			f: []listener.Filter{
-				HTTPConnectionManager("http-proxy", "/dev/null"),
+				HTTPConnectionManager("http-proxy", "/dev/null", HTTPConnectionOptions{}),
 			},
 			want: &v2.Listener{
 				Name:    "http-proxy",
@@ -72,7 +72,7 @@ func TestListener(t *testing.T) {
 				},
 				FilterChains: []listener.FilterChain{{
 					Filters: []listener.Filter{
-						HTTPConnectionManager("http-proxy", "/dev/null"),
+						HTTPConnectionManager("http-proxy", "/dev/null", HTTPConnectionOptions{}),
 					},
 				}},
 			},
@@ -265,7 +265,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := HTTPConnectionManager(tc.routename, tc.accesslog)
+			got := HTTPConnectionManager(tc.routename, tc.accesslog, HTTPConnectionOptions{})
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}
@@ -355,7 +355,7 @@ func TestTCPProxy(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := TCPProxy(statPrefix, tc.proxy, accessLogPath)
+			got := TCPProxy(statPrefix, tc.proxy, accessLogPath, TCPProxyOptions{})
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}

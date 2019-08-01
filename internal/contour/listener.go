@@ -66,6 +66,12 @@ type ListenerVisitorConfig struct {
 	// V1 or V2 preamble.
 	// If not set, defaults to false.
 	UseProxyProto bool
+
+	// HTTPConnectionOptions default options for HTTPConnectionManagers.
+	HTTPConnectionOptions envoy.HTTPConnectionOptions
+
+	// TCPProxyOptions default options for TCPProxies.
+	TCPProxyOptions envoy.TCPProxyOptions
 }
 
 // httpAddress returns the port for the HTTP (non TLS)
@@ -254,7 +260,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 			ENVOY_HTTP_LISTENER,
 			lvc.httpAddress(), lvc.httpPort(),
 			proxyProtocol(lvc.UseProxyProto),
-			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog()),
+			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.httpAccessLog(), lvc.HTTPConnectionOptions),
 		)
 
 	}
@@ -299,12 +305,12 @@ func (v *listenerVisitor) visit(vertex dag.Vertex) {
 		v.http = true
 	case *dag.SecureVirtualHost:
 		filters := []listener.Filter{
-			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog()),
+			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.httpsAccessLog(), v.HTTPConnectionOptions),
 		}
 		alpnProtos := []string{"h2", "http/1.1"}
 		if vh.VirtualHost.TCPProxy != nil {
 			filters = []listener.Filter{
-				envoy.TCPProxy(ENVOY_HTTPS_LISTENER, vh.VirtualHost.TCPProxy, v.httpsAccessLog()),
+				envoy.TCPProxy(ENVOY_HTTPS_LISTENER, vh.VirtualHost.TCPProxy, v.httpsAccessLog(), v.TCPProxyOptions),
 			}
 			alpnProtos = nil // do not offer ALPN
 		}
