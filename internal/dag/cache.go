@@ -28,6 +28,8 @@ import (
 // A KubernetesCache holds Kubernetes objects and associated configuration and produces
 // DAG values.
 type KubernetesCache struct {
+	DefaultSecret MetaOptions
+
 	// IngressRouteRootNamespaces specifies the namespaces where root
 	// IngressRoutes can be defined. If empty, roots can be defined in any
 	// namespace.
@@ -46,6 +48,11 @@ type KubernetesCache struct {
 // Meta holds the name and namespace of a Kubernetes object.
 type Meta struct {
 	name, namespace string
+}
+
+// MetaOptions holds defaults for Meta.
+type MetaOptions struct {
+	Name, Namespace string
 }
 
 // Insert inserts obj into the KubernetesCache.

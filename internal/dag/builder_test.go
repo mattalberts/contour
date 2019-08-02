@@ -652,6 +652,23 @@ func TestDAGInsert(t *testing.T) {
 		},
 	}
 
+	// i3b similar to i3 but expects default secret
+	i3b := &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kuard",
+			Namespace: "default",
+		},
+		Spec: v1beta1.IngressSpec{
+			TLS: []v1beta1.IngressTLS{{
+				Hosts: []string{"kuard.example.com"},
+			}},
+			Rules: []v1beta1.IngressRule{{
+				Host:             "kuard.example.com",
+				IngressRuleValue: ingressrulevalue(backend("kuard", intstr.FromInt(8080))),
+			}},
+		},
+	}
+
 	i14 := &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "timeout",
@@ -907,6 +924,27 @@ func TestDAGInsert(t *testing.T) {
 					},
 				}},
 			}},
+		},
+	}
+
+	// ir1f tcp forwards traffic to default/kuard:8080 by TLS terminating
+	// it first (using the default certificate)
+	ir1f := &ingressroutev1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kuard-tcp",
+			Namespace: "default",
+		},
+		Spec: ingressroutev1.IngressRouteSpec{
+			VirtualHost: &ingressroutev1.VirtualHost{
+				Fqdn: "kuard.example.com",
+				TLS:  &ingressroutev1.TLS{},
+			},
+			TCPProxy: &ingressroutev1.TCPProxy{
+				Services: []ingressroutev1.Service{{
+					Name: "kuard",
+					Port: 8080,
+				}},
+			},
 		},
 	}
 
@@ -1673,6 +1711,15 @@ func TestDAGInsert(t *testing.T) {
 		Data: secretdata("", ""),
 	}
 
+	sec3 := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret",
+			Namespace: "other",
+		},
+		Type: v1.SecretTypeTLS,
+		Data: secretdata("certificate", "key"),
+	}
+
 	cert1 := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ca",
@@ -1684,6 +1731,7 @@ func TestDAGInsert(t *testing.T) {
 	}
 
 	tests := map[string]struct {
+		kc   *KubernetesCache
 		objs []interface{}
 		want []Vertex
 	}{
@@ -1958,6 +2006,59 @@ func TestDAGInsert(t *testing.T) {
 			objs: []interface{}{
 				i3,
 				sec1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("kuard.example.com", route("/")),
+					),
+				},
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						securevirtualhost("kuard.example.com", sec1, route("/")),
+					),
+				},
+			),
+		},
+		"insert ingress w/ default tls": {
+			kc: &KubernetesCache{
+				DefaultSecret: MetaOptions{
+					Name:      "secret",
+					Namespace: "other",
+				},
+			},
+			objs: []interface{}{
+				sec3,
+				i3b,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("kuard.example.com", route("/")),
+					),
+				},
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						securevirtualhost("kuard.example.com", sec3, route("/")),
+					),
+				},
+			),
+		},
+		"insert ingress w/ default tls override": {
+			kc: &KubernetesCache{
+				DefaultSecret: MetaOptions{
+					Name:      "secret",
+					Namespace: "other",
+				},
+			},
+			objs: []interface{}{
+				sec1,
+				sec3,
+				i3,
 			},
 			want: listeners(
 				&Listener{
@@ -2255,6 +2356,66 @@ func TestDAGInsert(t *testing.T) {
 		"insert ingressroute with tcp forward with TLS termination": {
 			objs: []interface{}{
 				ir1a, s1, sec1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						&SecureVirtualHost{
+							VirtualHost: VirtualHost{
+								Name: "kuard.example.com",
+								TCPProxy: &TCPProxy{
+									Clusters: clusters(
+										tcpService(s1),
+									),
+								},
+							},
+							Secret:          secret(sec1),
+							MinProtoVersion: auth.TlsParameters_TLSv1_1,
+						},
+					),
+				},
+			),
+		},
+		"insert ingressroute with tcp forward with default TLS termination": {
+			kc: &KubernetesCache{
+				DefaultSecret: MetaOptions{
+					Name:      "secret",
+					Namespace: "other",
+				},
+			},
+			objs: []interface{}{
+				ir1f, s1, sec3,
+			},
+			want: listeners(
+				&Listener{
+					Port: 443,
+					VirtualHosts: virtualhosts(
+						&SecureVirtualHost{
+							VirtualHost: VirtualHost{
+								Name: "kuard.example.com",
+								TCPProxy: &TCPProxy{
+									Clusters: clusters(
+										tcpService(s1),
+									),
+								},
+							},
+							Secret:          secret(sec3),
+							MinProtoVersion: auth.TlsParameters_TLSv1_1,
+						},
+					),
+				},
+			),
+		},
+		"insert ingressroute with tcp forward with default TLS termination override": {
+			kc: &KubernetesCache{
+				DefaultSecret: MetaOptions{
+					Name:      "secret",
+					Namespace: "other",
+				},
+			},
+			objs: []interface{}{
+				ir1a, s1, sec1, sec3,
 			},
 			want: listeners(
 				&Listener{
@@ -3426,11 +3587,16 @@ func TestDAGInsert(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			var kc KubernetesCache
+			var kc *KubernetesCache
+			if tc.kc != nil {
+				kc = tc.kc
+			} else {
+				kc = &KubernetesCache{}
+			}
 			for _, o := range tc.objs {
 				kc.Insert(o)
 			}
-			dag := BuildDAG(&kc)
+			dag := BuildDAG(kc)
 
 			got := make(map[int]*Listener)
 			dag.Visit(listenerMap(got).Visit)
