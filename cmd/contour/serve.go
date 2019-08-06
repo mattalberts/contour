@@ -113,6 +113,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("default-tls-secret", "default tls certificate secret <namespace>/<name>").SetValue(&ctx.defaultSecret)
 	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.drainTimeout)
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("holdoff-delay", "Holdoff notifier delay for all updates").Default("100ms").DurationVar(&ctx.holdoffDelay)
+	serve.Flag("holdoff-max-delay", "Holdoff notifier max delay before forced updates").Default("500ms").DurationVar(&ctx.holdoffMaxDelay)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
@@ -167,6 +169,8 @@ type serveContext struct {
 	enableTracing       bool
 	defaultSecret       resource
 	drainTimeout        time.Duration
+	holdoffDelay        time.Duration
+	holdoffMaxDelay     time.Duration
 	idleTimeout         time.Duration
 	requestTimeout      time.Duration
 	streamIdleTimeout   time.Duration
@@ -221,6 +225,9 @@ func (ctx *serveContext) ingressRouteRootNamespaces() []string {
 
 // doServe runs the contour serve subcommand.
 func doServe(log logrus.FieldLogger, ctx *serveContext) error {
+
+	// step 0. setup holdoff notifier delays
+	contour.SetHoldoffDelay(ctx.holdoffDelay, ctx.holdoffMaxDelay)
 
 	// step 1. establish k8s client connection
 	client, contourClient := newClient(ctx.Kubeconfig, ctx.InCluster)

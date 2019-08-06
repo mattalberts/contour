@@ -30,6 +30,27 @@ const (
 	holdoffMaxDelay = 500 * time.Millisecond
 )
 
+var holdoff = struct {
+	delay    time.Duration
+	maxDelay time.Duration
+	set      sync.Once
+}{
+	delay:    holdoffDelay,
+	maxDelay: holdoffMaxDelay,
+}
+
+// SetHoldoffDelay configures the holdoff delay timing
+func SetHoldoffDelay(delay, maxDelay time.Duration) {
+	holdoff.set.Do(func() {
+		if delay > 0 {
+			holdoff.delay = delay
+		}
+		if maxDelay > 0 {
+			holdoff.maxDelay = maxDelay
+		}
+	})
+}
+
 // A HoldoffNotifier delays calls to OnChange in the hope of
 // coalescing rapid calls into a single update.
 type HoldoffNotifier struct {
@@ -52,7 +73,7 @@ func (hn *HoldoffNotifier) OnChange(kc *dag.KubernetesCache) {
 		hn.timer.Stop()
 	}
 	since := time.Since(hn.last)
-	if since > holdoffMaxDelay {
+	if since > holdoff.maxDelay {
 		// update immediately
 		hn.WithField("last_update", since).WithField("pending", hn.pending.reset()).Info("forcing update")
 		hn.Notifier.OnChange(kc)
@@ -60,7 +81,7 @@ func (hn *HoldoffNotifier) OnChange(kc *dag.KubernetesCache) {
 		return
 	}
 
-	hn.timer = time.AfterFunc(holdoffDelay, func() {
+	hn.timer = time.AfterFunc(holdoff.delay, func() {
 		hn.mu.Lock()
 		defer hn.mu.Unlock()
 		hn.WithField("last_update", time.Since(hn.last)).WithField("pending", hn.pending.reset()).Info("performing delayed update")
