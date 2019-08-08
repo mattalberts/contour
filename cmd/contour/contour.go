@@ -14,8 +14,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	clientset "github.com/heptio/contour/apis/generated/clientset/versioned"
@@ -24,9 +26,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 func main() {
+	flags := flag.NewFlagSet("contour", flag.ExitOnError)
+	klog.InitFlags(flags)
 	log := logrus.StandardLogger()
 	app := kingpin.New("contour", "Heptio Contour Kubernetes ingress controller.")
 
@@ -81,6 +86,8 @@ func main() {
 		// on top of any values sourced from -c's config file.
 		_, err := app.Parse(args)
 		check(err)
+		_ = flags.Lookup("logtostderr").Value.Set("true")
+		_ = flags.Lookup("v").Value.Set(strconv.Itoa(serveCtx.logLevel))
 		log.SetLevel(logruslevel(serveCtx.logLevel))
 		log.Infof("args: %v", args)
 		doServe(log, serveCtx)
