@@ -80,9 +80,17 @@ func idleTimeout(d time.Duration) *time.Duration {
 	return &d
 }
 
+func tv(d time.Duration) *time.Duration {
+	if d > 0 {
+		return &d
+	}
+	return nil
+}
+
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	EnableTracing bool
+	EnableTracing  bool
+	RequestTimeout time.Duration
 }
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
@@ -128,6 +136,7 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 				UseRemoteAddress:          &types.BoolValue{Value: true}, // TODO(jbeda) should this ever be false?
 				NormalizePath:             &types.BoolValue{Value: true},
 				IdleTimeout:               idleTimeout(HTTPDefaultIdleTimeout),
+				RequestTimeout:            tv(options.RequestTimeout),
 				PreserveExternalRequestId: true,
 				Tracing:                   tracing(options.EnableTracing),
 			}),
