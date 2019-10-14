@@ -150,6 +150,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
 
+	serve.Flag("default-tls-secret", "default tls certificate secret <namespace>/<name>").SetValue(&ctx.defaultSecret)
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
 	serve.Flag("holdoff-delay", "Holdoff notifier delay for all updates").Default("100ms").DurationVar(&ctx.holdoffDelay)
 	serve.Flag("holdoff-max-delay", "Holdoff notifier max delay before forced updates").Default("500ms").DurationVar(&ctx.holdoffMaxDelay)
@@ -215,6 +216,9 @@ type serveContext struct {
 	streamIdleTimeout   time.Duration
 	routeIdleTimeout    time.Duration
 	routeMaxGrpcTimeout time.Duration
+
+	// contour's default secret used for tls termination
+	defaultSecret resource
 
 	// contour's notification delay
 	holdoffDelay    time.Duration
@@ -356,6 +360,10 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				IngressRouteRootNamespaces: ctx.ingressRouteRootNamespaces(),
 				IngressClass:               ctx.ingressClass,
 				FieldLogger:                log.WithField("context", "KubernetesCache"),
+				DefaultSecret: dag.MetaOptions{
+					Name:      ctx.defaultSecret.name,
+					Namespace: ctx.defaultSecret.namespace,
+				},
 				RouteOptions: dag.RouteOptions{
 					IdleTimeout:    ctx.idleTimeout,
 					MaxGrpcTimeout: ctx.routeMaxGrpcTimeout,

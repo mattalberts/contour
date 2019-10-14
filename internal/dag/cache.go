@@ -36,6 +36,9 @@ type KubernetesCache struct {
 	// If not set, defaults to DEFAULT_INGRESS_CLASS.
 	IngressClass string
 
+	// DefaultSecret provides a default references for tls configuration
+	DefaultSecret MetaOptions
+
 	// RouteOptions provides ptions for envoy's routes
 	RouteOptions RouteOptions
 
@@ -51,6 +54,11 @@ type KubernetesCache struct {
 // Meta holds the name and namespace of a Kubernetes object.
 type Meta struct {
 	name, namespace string
+}
+
+// MetaOptions holds defaults for Meta.
+type MetaOptions struct {
+	Name, Namespace string
 }
 
 // Insert inserts obj into the KubernetesCache.
