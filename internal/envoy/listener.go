@@ -93,6 +93,7 @@ func tvd(d, v time.Duration) *time.Duration {
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
 	EnableTracing     bool
+	DrainTimeout      time.Duration
 	IdleTimeout       time.Duration
 	RequestTimeout    time.Duration
 	StreamIdleTimeout time.Duration
@@ -140,6 +141,7 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 				AccessLog:                 FileAccessLog(accessLogPath),
 				UseRemoteAddress:          &types.BoolValue{Value: true}, // TODO(jbeda) should this ever be false?
 				NormalizePath:             &types.BoolValue{Value: true},
+				DrainTimeout:              tv(options.DrainTimeout),
 				IdleTimeout:               tvd(options.IdleTimeout, HTTPDefaultIdleTimeout),
 				RequestTimeout:            tv(options.RequestTimeout),
 				StreamIdleTimeout:         tv(options.StreamIdleTimeout),
