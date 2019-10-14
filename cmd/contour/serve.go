@@ -148,6 +148,9 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("use-proxy-protocol", "Use PROXY protocol for all listeners").BoolVar(&ctx.useProxyProto)
 
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
+
+	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
+
 	return serve, &ctx
 }
 
@@ -191,6 +194,9 @@ type serveContext struct {
 	httpsAddr      string
 	httpsPort      int
 	httpsAccessLog string
+
+	// contour's log level control
+	logLevel int
 
 	// PermitInsecureGRPC disables TLS on Contour's gRPC listener.
 	PermitInsecureGRPC bool `yaml:"-"`
