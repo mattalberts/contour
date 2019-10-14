@@ -37,6 +37,7 @@ func timeoutPolicy(tp *v1beta1.TimeoutPolicy, options RouteOptions) *TimeoutPoli
 	}
 	return &TimeoutPolicy{
 		Timeout:        parseTimeout(tp.Request),
+		IdleTimeout:    parseTimeoutWithDefault(tp.Idle, options.IdleTimeout),
 		MaxGrpcTimeout: parseTimeoutWithDefault(tp.MaxGrpc, options.MaxGrpcTimeout),
 	}
 }

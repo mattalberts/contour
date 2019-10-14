@@ -155,6 +155,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
+	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&ctx.routeIdleTimeout)
 	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&ctx.routeMaxGrpcTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
@@ -210,6 +211,7 @@ type serveContext struct {
 	idleTimeout         time.Duration
 	requestTimeout      time.Duration
 	streamIdleTimeout   time.Duration
+	routeIdleTimeout    time.Duration
 	routeMaxGrpcTimeout time.Duration
 
 	// contour's log level control
@@ -349,6 +351,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				IngressClass:               ctx.ingressClass,
 				FieldLogger:                log.WithField("context", "KubernetesCache"),
 				RouteOptions: dag.RouteOptions{
+					IdleTimeout:    ctx.idleTimeout,
 					MaxGrpcTimeout: ctx.routeMaxGrpcTimeout,
 				},
 			},

@@ -122,6 +122,48 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 				Timeout: -1,
 			},
 		},
+		"default idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{},
+			opts: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 120 * time.Second,
+			},
+		},
+		"valid idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "1m30s",
+			},
+			opts: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 90 * time.Second,
+			},
+		},
+		"invalid idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "90",
+			},
+			opts: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 120 * time.Second,
+			},
+		},
+		"infinite idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "infinity",
+			},
+			opts: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: -1,
+			},
+		},
 		"default max_grpc timeout": {
 			tp: &v1beta1.TimeoutPolicy{},
 			opts: RouteOptions{
