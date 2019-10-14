@@ -357,7 +357,7 @@ func (b *Builder) computeIngresses() {
 					continue
 				}
 
-				r := route(ing, path)
+				r := route(ing, path, b.Source.RouteOptions)
 				r.Clusters = append(r.Clusters, &Cluster{Upstream: s})
 
 				var v Vertex = &PrefixRoute{
@@ -532,7 +532,7 @@ func (b *Builder) processRoutes(ir *ingressroutev1.IngressRoute, prefixMatch str
 					Websocket:     route.EnableWebsockets,
 					HTTPSUpgrade:  routeEnforceTLS(enforceTLS, route.PermitInsecure && !b.DisablePermitInsecure),
 					PrefixRewrite: route.PrefixRewrite,
-					TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy),
+					TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy, b.Source.RouteOptions),
 					RetryPolicy:   retryPolicy(route.RetryPolicy),
 				},
 			}
@@ -711,7 +711,7 @@ func externalName(svc *v1.Service) string {
 }
 
 // route returns a dag.Route for the supplied Ingress.
-func route(ingress *v1beta1.Ingress, path string) Route {
+func route(ingress *v1beta1.Ingress, path string, options RouteOptions) Route {
 	var retry *RetryPolicy
 	if retryOn, ok := ingress.Annotations[annotationRetryOn]; ok && len(retryOn) > 0 {
 		// if there is a non empty retry-on annotation, build a RetryPolicy manually.
@@ -728,12 +728,16 @@ func route(ingress *v1beta1.Ingress, path string) Route {
 	}
 
 	var timeout *TimeoutPolicy
-	if request, ok := ingress.Annotations[annotationRequestTimeout]; ok {
-		// if the request timeout annotation is present on this ingress
-		// construct and use the ingressroute timeout policy logic.
-		timeout = timeoutPolicy(&ingressroutev1.TimeoutPolicy{
-			Request: request,
-		})
+	{
+		n := 0
+		tp := &TimeoutPolicy{}
+		if val, ok := ingress.Annotations[annotationRequestTimeout]; ok {
+			tp.Timeout = parseTimeout(val)
+			n++
+		}
+		if n > 0 {
+			timeout = tp
+		}
 	}
 
 	wr := websocketRoutes(ingress)

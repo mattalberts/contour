@@ -81,6 +81,7 @@ func TestRetryPolicyIngressRoute(t *testing.T) {
 func TestTimeoutPolicyIngressRoute(t *testing.T) {
 	tests := map[string]struct {
 		tp   *v1beta1.TimeoutPolicy
+		opts RouteOptions
 		want *TimeoutPolicy
 	}{
 		"nil timeout policy": {
@@ -125,7 +126,7 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := timeoutPolicy(tc.tp)
+			got := timeoutPolicy(tc.tp, tc.opts)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}

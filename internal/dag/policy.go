@@ -31,7 +31,7 @@ func retryPolicy(rp *v1beta1.RetryPolicy) *RetryPolicy {
 	}
 }
 
-func timeoutPolicy(tp *v1beta1.TimeoutPolicy) *TimeoutPolicy {
+func timeoutPolicy(tp *v1beta1.TimeoutPolicy, options RouteOptions) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}
