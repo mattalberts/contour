@@ -36,7 +36,8 @@ func timeoutPolicy(tp *v1beta1.TimeoutPolicy, options RouteOptions) *TimeoutPoli
 		return nil
 	}
 	return &TimeoutPolicy{
-		Timeout: parseTimeout(tp.Request),
+		Timeout:        parseTimeout(tp.Request),
+		MaxGrpcTimeout: parseTimeoutWithDefault(tp.MaxGrpc, options.MaxGrpcTimeout),
 	}
 }
 
@@ -61,6 +62,27 @@ func parseTimeout(timeout string) time.Duration {
 		// TODO(cmalonty) plumb a logger in here so we can log this error.
 		// Assuming infinite duration is going to surprise people less for
 		// a not-parseable duration than a implicit 15 second one.
+		return -1
+	}
+	return d
+}
+
+func parseTimeoutWithDefault(timeout string, val time.Duration) time.Duration {
+	if timeout == "" {
+		return val
+	}
+	// Interpret "infinity" explicitly as an infinite timeout, which envoy config
+	// expects as a timeout of 0. This could be specified with the duration string
+	// "0s" but want to give an explicit out for operators.
+	if timeout == "infinity" {
+		return -1
+	}
+
+	d, err := time.ParseDuration(timeout)
+	if err != nil {
+		if val > 0 {
+			return val
+		}
 		return -1
 	}
 	return d

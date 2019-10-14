@@ -735,6 +735,10 @@ func route(ingress *v1beta1.Ingress, path string, options RouteOptions) Route {
 			tp.Timeout = parseTimeout(val)
 			n++
 		}
+		if val, ok := ingress.Annotations[annotationMaxGrpcTimeout]; ok {
+			tp.MaxGrpcTimeout = parseTimeoutWithDefault(val, options.MaxGrpcTimeout)
+			n++
+		}
 		if n > 0 {
 			timeout = tp
 		}
