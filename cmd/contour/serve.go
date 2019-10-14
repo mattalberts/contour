@@ -151,6 +151,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
@@ -202,6 +203,7 @@ type serveContext struct {
 	enableTracing bool
 
 	// envoy's http listener timeout defaults
+	idleTimeout    time.Duration
 	requestTimeout time.Duration
 
 	// contour's log level control
@@ -318,7 +320,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 					EnableTracing:  ctx.enableTracing,
+					IdleTimeout:    ctx.idleTimeout,
 					RequestTimeout: ctx.requestTimeout,
+				},
+				TCPProxyOptions: envoy.TCPProxyOptions{
+					IdleTimeout: ctx.idleTimeout,
 				},
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),

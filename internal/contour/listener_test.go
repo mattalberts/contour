@@ -797,6 +797,75 @@ func TestListenerVisit(t *testing.T) {
 				}},
 			}),
 		},
+		"--idle-timeout": {
+			ListenerVisitorConfig: ListenerVisitorConfig{
+				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+					IdleTimeout: 1500 * time.Millisecond,
+				},
+			},
+			objs: []interface{}{
+				&v1beta1.Ingress{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "simple",
+						Namespace: "default",
+					},
+					Spec: v1beta1.IngressSpec{
+						TLS: []v1beta1.IngressTLS{{
+							Hosts:      []string{"whatever.example.com"},
+							SecretName: "secret",
+						}},
+						Backend: &v1beta1.IngressBackend{
+							ServiceName: "kuard",
+							ServicePort: intstr.FromInt(8080),
+						},
+					},
+				},
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret",
+						Namespace: "default",
+					},
+					Type: "kubernetes.io/tls",
+					Data: secretdata(CERTIFICATE, RSA_PRIVATE_KEY),
+				},
+				&v1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "kuard",
+						Namespace: "default",
+					},
+					Spec: v1.ServiceSpec{
+						Ports: []v1.ServicePort{{
+							Name:     "http",
+							Protocol: "TCP",
+							Port:     8080,
+						}},
+					},
+				},
+			},
+			want: listenermap(&v2.Listener{
+				Name:            ENVOY_HTTP_LISTENER,
+				Address:         *envoy.SocketAddress("0.0.0.0", 8080),
+				ListenerFilters: []listener.ListenerFilter{},
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, DEFAULT_HTTP_ACCESS_LOG, envoy.HTTPConnectionOptions{
+					IdleTimeout: 1500 * time.Millisecond,
+				})),
+			}, &v2.Listener{
+				Name:    ENVOY_HTTPS_LISTENER,
+				Address: *envoy.SocketAddress("0.0.0.0", 8443),
+				ListenerFilters: []listener.ListenerFilter{
+					envoy.TLSInspector(),
+				},
+				FilterChains: []listener.FilterChain{{
+					FilterChainMatch: &listener.FilterChainMatch{
+						ServerNames: []string{"whatever.example.com"},
+					},
+					TlsContext: tlscontext(auth.TlsParameters_TLSv1_1, "h2", "http/1.1"),
+					Filters: envoy.Filters(envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, DEFAULT_HTTPS_ACCESS_LOG, envoy.HTTPConnectionOptions{
+						IdleTimeout: 1500 * time.Millisecond,
+					})),
+				}},
+			}),
+		},
 		"--request-timeout": {
 			ListenerVisitorConfig: ListenerVisitorConfig{
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
