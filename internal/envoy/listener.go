@@ -92,9 +92,10 @@ func tvd(d, v time.Duration) *time.Duration {
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	EnableTracing  bool
-	IdleTimeout    time.Duration
-	RequestTimeout time.Duration
+	EnableTracing     bool
+	IdleTimeout       time.Duration
+	RequestTimeout    time.Duration
+	StreamIdleTimeout time.Duration
 }
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
@@ -141,6 +142,7 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 				NormalizePath:             &types.BoolValue{Value: true},
 				IdleTimeout:               tvd(options.IdleTimeout, HTTPDefaultIdleTimeout),
 				RequestTimeout:            tv(options.RequestTimeout),
+				StreamIdleTimeout:         tv(options.StreamIdleTimeout),
 				PreserveExternalRequestId: true,
 				Tracing:                   tracing(options.EnableTracing),
 			}),
