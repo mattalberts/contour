@@ -151,6 +151,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.drainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
@@ -204,6 +205,7 @@ type serveContext struct {
 	enableTracing bool
 
 	// envoy's http listener timeout defaults
+	drainTimeout      time.Duration
 	idleTimeout       time.Duration
 	requestTimeout    time.Duration
 	streamIdleTimeout time.Duration
@@ -322,6 +324,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 					EnableTracing:     ctx.enableTracing,
+					DrainTimeout:      ctx.drainTimeout,
 					IdleTimeout:       ctx.idleTimeout,
 					RequestTimeout:    ctx.requestTimeout,
 					StreamIdleTimeout: ctx.streamIdleTimeout,
