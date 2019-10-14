@@ -85,7 +85,7 @@ func TestNonTLSListener(t *testing.T) {
 			&v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			},
 			staticListener(),
 		),
@@ -141,7 +141,7 @@ func TestNonTLSListener(t *testing.T) {
 			&v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			},
 			staticListener(),
 		),
@@ -214,7 +214,7 @@ func TestTLSListener(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, &v2.Listener{
 				Name:    "ingress_https",
@@ -222,7 +222,7 @@ func TestTLSListener(t *testing.T) {
 				ListenerFilters: []listener.ListenerFilter{
 					envoy.TLSInspector(),
 				},
-				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 			}),
 			any(t, staticListener()),
 		},
@@ -259,7 +259,7 @@ func TestTLSListener(t *testing.T) {
 				ListenerFilters: []listener.ListenerFilter{
 					envoy.TLSInspector(),
 				},
-				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 			}),
 			any(t, staticListener()),
 		},
@@ -374,7 +374,7 @@ func TestIngressRouteTLSListener(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 
 	l1.FilterChains[0].TlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = auth.TlsParameters_TLSv1_1
@@ -391,7 +391,7 @@ func TestIngressRouteTLSListener(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, l1),
 			any(t, staticListener()),
@@ -408,7 +408,7 @@ func TestIngressRouteTLSListener(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, staticListener()),
 		},
@@ -425,7 +425,7 @@ func TestIngressRouteTLSListener(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 
 	l2.FilterChains[0].TlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = auth.TlsParameters_TLSv1_3
@@ -438,7 +438,7 @@ func TestIngressRouteTLSListener(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, l2),
 			any(t, staticListener()),
@@ -505,7 +505,7 @@ func TestLDSFilter(t *testing.T) {
 				ListenerFilters: []listener.ListenerFilter{
 					envoy.TLSInspector(),
 				},
-				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 			}),
 		},
 		TypeUrl: listenerType,
@@ -519,7 +519,7 @@ func TestLDSFilter(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 		},
 		TypeUrl: listenerType,
@@ -589,7 +589,7 @@ func TestLDSTLSMinimumProtocolVersion(t *testing.T) {
 				ListenerFilters: []listener.ListenerFilter{
 					envoy.TLSInspector(),
 				},
-				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+				FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 			}),
 		},
 		TypeUrl: listenerType,
@@ -622,7 +622,7 @@ func TestLDSTLSMinimumProtocolVersion(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	// easier to patch this up than add more params to filterchaintls
 	l1.FilterChains[0].TlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = auth.TlsParameters_TLSv1_3
@@ -690,7 +690,7 @@ func TestLDSIngressHTTPUseProxyProtocol(t *testing.T) {
 				ListenerFilters: []listener.ListenerFilter{
 					envoy.ProxyProtocol(),
 				},
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, staticListener()),
 		},
@@ -768,7 +768,7 @@ func TestLDSIngressHTTPSUseProxyProtocol(t *testing.T) {
 			envoy.ProxyProtocol(),
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	assertEqual(t, &v2.DiscoveryResponse{
 		VersionInfo: "1",
@@ -779,7 +779,7 @@ func TestLDSIngressHTTPSUseProxyProtocol(t *testing.T) {
 				ListenerFilters: []listener.ListenerFilter{
 					envoy.ProxyProtocol(),
 				},
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, ingress_https),
 			any(t, staticListener()),
@@ -857,7 +857,7 @@ func TestLDSCustomAddressAndPort(t *testing.T) {
 	ingress_http := &v2.Listener{
 		Name:         "ingress_http",
 		Address:      *envoy.SocketAddress("127.0.0.100", 9100),
-		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 	}
 	ingress_https := &v2.Listener{
 		Name:    "ingress_https",
@@ -865,7 +865,7 @@ func TestLDSCustomAddressAndPort(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	assertEqual(t, &v2.DiscoveryResponse{
 		VersionInfo: "1",
@@ -943,7 +943,7 @@ func TestLDSCustomAccessLogPaths(t *testing.T) {
 	ingress_http := &v2.Listener{
 		Name:         "ingress_http",
 		Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/tmp/http_access.log")),
+		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/tmp/http_access.log", envoy.HTTPConnectionOptions{})),
 	}
 	ingress_https := &v2.Listener{
 		Name:    "ingress_https",
@@ -951,7 +951,7 @@ func TestLDSCustomAccessLogPaths(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/tmp/https_access.log"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/tmp/https_access.log", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	assertEqual(t, &v2.DiscoveryResponse{
 		VersionInfo: "1",
@@ -1024,7 +1024,7 @@ func TestLDSIngressRouteInsideRootNamespaces(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, staticListener()),
 		},
@@ -1154,7 +1154,7 @@ func TestIngressRouteHTTPS(t *testing.T) {
 	ingressHTTP := &v2.Listener{
 		Name:         "ingress_http",
 		Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 	}
 
 	ingressHTTPS := &v2.Listener{
@@ -1163,7 +1163,7 @@ func TestIngressRouteHTTPS(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	assertEqual(t, &v2.DiscoveryResponse{
 		VersionInfo: "1",
@@ -1383,7 +1383,7 @@ func TestIngressRouteTLSCertificateDelegation(t *testing.T) {
 	ingress_http := &v2.Listener{
 		Name:         "ingress_http",
 		Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+		FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 	}
 
 	// assert there is no ingress_https because there is no matching secret.
@@ -1420,7 +1420,7 @@ func TestIngressRouteTLSCertificateDelegation(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("example.com", s1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 
 	assertEqual(t, &v2.DiscoveryResponse{
@@ -1582,7 +1582,7 @@ func TestIngressRouteMinimumTLSVersion(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	l1.FilterChains[0].TlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = auth.TlsParameters_TLSv1_2
 
@@ -1593,7 +1593,7 @@ func TestIngressRouteMinimumTLSVersion(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, l1),
 			any(t, staticListener()),
@@ -1633,7 +1633,7 @@ func TestIngressRouteMinimumTLSVersion(t *testing.T) {
 		ListenerFilters: []listener.ListenerFilter{
 			envoy.TLSInspector(),
 		},
-		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout"), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", secret1, envoy.HTTPConnectionManager("ingress_https", "/dev/stdout", envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	l2.FilterChains[0].TlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = auth.TlsParameters_TLSv1_3
 
@@ -1644,7 +1644,7 @@ func TestIngressRouteMinimumTLSVersion(t *testing.T) {
 			any(t, &v2.Listener{
 				Name:         "ingress_http",
 				Address:      *envoy.SocketAddress("0.0.0.0", 8080),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout")),
+				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager("ingress_http", "/dev/stdout", envoy.HTTPConnectionOptions{})),
 			}),
 			any(t, l2),
 			any(t, staticListener()),

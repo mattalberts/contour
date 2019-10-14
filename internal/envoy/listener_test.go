@@ -43,13 +43,13 @@ func TestListener(t *testing.T) {
 			name:    "http",
 			address: "0.0.0.0",
 			port:    9000,
-			f:       []listener.Filter{HTTPConnectionManager("http", "/dev/null")},
+			f:       []listener.Filter{HTTPConnectionManager("http", "/dev/null", HTTPConnectionOptions{})},
 			want: &v2.Listener{
 				Name:    "http",
 				Address: *SocketAddress("0.0.0.0", 9000),
 				FilterChains: []listener.FilterChain{{
 					Filters: []listener.Filter{
-						HTTPConnectionManager("http", "/dev/null"),
+						HTTPConnectionManager("http", "/dev/null", HTTPConnectionOptions{}),
 					},
 				}},
 			},
@@ -62,7 +62,7 @@ func TestListener(t *testing.T) {
 				ProxyProtocol(),
 			},
 			f: []listener.Filter{
-				HTTPConnectionManager("http-proxy", "/dev/null"),
+				HTTPConnectionManager("http-proxy", "/dev/null", HTTPConnectionOptions{}),
 			},
 			want: &v2.Listener{
 				Name:    "http-proxy",
@@ -72,7 +72,7 @@ func TestListener(t *testing.T) {
 				},
 				FilterChains: []listener.FilterChain{{
 					Filters: []listener.Filter{
-						HTTPConnectionManager("http-proxy", "/dev/null"),
+						HTTPConnectionManager("http-proxy", "/dev/null", HTTPConnectionOptions{}),
 					},
 				}},
 			},
@@ -213,6 +213,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 	tests := map[string]struct {
 		routename string
 		accesslog string
+		options   HTTPConnectionOptions
 		want      listener.Filter
 	}{
 		"default": {
@@ -266,7 +267,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := HTTPConnectionManager(tc.routename, tc.accesslog)
+			got := HTTPConnectionManager(tc.routename, tc.accesslog, tc.options)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}
@@ -305,8 +306,9 @@ func TestTCPProxy(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		proxy *dag.TCPProxy
-		want  listener.Filter
+		proxy   *dag.TCPProxy
+		options TCPProxyOptions
+		want    listener.Filter
 	}{
 		"single cluster": {
 			proxy: &dag.TCPProxy{
@@ -356,7 +358,7 @@ func TestTCPProxy(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := TCPProxy(statPrefix, tc.proxy, accessLogPath)
+			got := TCPProxy(statPrefix, tc.proxy, accessLogPath, tc.options)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}
