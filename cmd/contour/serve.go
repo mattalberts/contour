@@ -34,6 +34,7 @@ import (
 	"github.com/heptio/contour/internal/contour"
 	"github.com/heptio/contour/internal/dag"
 	"github.com/heptio/contour/internal/debug"
+	"github.com/heptio/contour/internal/envoy"
 	"github.com/heptio/contour/internal/grpc"
 	"github.com/heptio/contour/internal/httpsvc"
 	"github.com/heptio/contour/internal/k8s"
@@ -149,6 +150,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
 
+	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -194,6 +196,9 @@ type serveContext struct {
 	httpsAddr      string
 	httpsPort      int
 	httpsAccessLog string
+
+	// envoy's http listener open-tracing control
+	enableTracing bool
 
 	// contour's log level control
 	logLevel int
@@ -307,6 +312,9 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				HTTPSPort:              ctx.httpsPort,
 				HTTPSAccessLog:         ctx.httpsAccessLog,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
+				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+					EnableTracing: ctx.enableTracing,
+				},
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
 			FieldLogger:   log.WithField("context", "CacheHandler"),

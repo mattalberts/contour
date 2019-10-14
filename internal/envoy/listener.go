@@ -82,6 +82,7 @@ func idleTimeout(d time.Duration) *time.Duration {
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
+	EnableTracing bool
 }
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
@@ -128,6 +129,7 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 				NormalizePath:             &types.BoolValue{Value: true},
 				IdleTimeout:               idleTimeout(HTTPDefaultIdleTimeout),
 				PreserveExternalRequestId: true,
+				Tracing:                   tracing(options.EnableTracing),
 			}),
 		},
 	}
@@ -265,4 +267,13 @@ func any(pb proto.Message) *types.Any {
 		panic(err.Error())
 	}
 	return any
+}
+
+func tracing(enableTracing bool) *http.HttpConnectionManager_Tracing {
+	if enableTracing {
+		return &http.HttpConnectionManager_Tracing{
+			OperationName: http.EGRESS,
+		}
+	}
+	return nil
 }
