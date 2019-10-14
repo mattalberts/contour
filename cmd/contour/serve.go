@@ -151,6 +151,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -199,6 +200,9 @@ type serveContext struct {
 
 	// envoy's http listener open-tracing control
 	enableTracing bool
+
+	// envoy's http listener timeout defaults
+	requestTimeout time.Duration
 
 	// contour's log level control
 	logLevel int
@@ -313,7 +317,8 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				HTTPSAccessLog:         ctx.httpsAccessLog,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
-					EnableTracing: ctx.enableTracing,
+					EnableTracing:  ctx.enableTracing,
+					RequestTimeout: ctx.requestTimeout,
 				},
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
