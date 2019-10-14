@@ -116,10 +116,52 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 		},
 		"infinite request timeout": {
 			tp: &v1beta1.TimeoutPolicy{
-				Request: "infinite",
+				Request: "infinity",
 			},
 			want: &TimeoutPolicy{
 				Timeout: -1,
+			},
+		},
+		"default max_grpc timeout": {
+			tp: &v1beta1.TimeoutPolicy{},
+			opts: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
+		"valid max_grpc timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				MaxGrpc: "1m30s",
+			},
+			opts: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 90 * time.Second,
+			},
+		},
+		"invalid max_grpc timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				MaxGrpc: "90",
+			},
+			opts: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
+		"infinite max_grpc timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				MaxGrpc: "infinity",
+			},
+			opts: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: -1,
 			},
 		},
 	}
@@ -160,6 +202,50 @@ func TestParseTimeout(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := parseTimeout(tc.duration)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestParseTimeoutWithDefault(t *testing.T) {
+	tests := map[string]struct {
+		duration string
+		alt      time.Duration
+		want     time.Duration
+	}{
+		"empty": {
+			duration: "",
+			want:     0,
+		},
+		"empty with non-zero default": {
+			duration: "",
+			alt:      5 * time.Second,
+			want:     5 * time.Second,
+		},
+		"infinity": {
+			duration: "infinity",
+			want:     -1,
+		},
+		"10 seconds": {
+			duration: "10s",
+			want:     10 * time.Second,
+		},
+		"invalid": {
+			duration: "10", // 10 what?
+			want:     -1,
+		},
+		"invalid with non-zero default": {
+			duration: "10", // 10 what?
+			alt:      5 * time.Second,
+			want:     5 * time.Second,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := parseTimeoutWithDefault(tc.duration, tc.alt)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}

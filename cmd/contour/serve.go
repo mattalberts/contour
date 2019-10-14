@@ -155,6 +155,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
+	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&ctx.routeMaxGrpcTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -205,10 +206,11 @@ type serveContext struct {
 	enableTracing bool
 
 	// envoy's http listener timeout defaults
-	drainTimeout      time.Duration
-	idleTimeout       time.Duration
-	requestTimeout    time.Duration
-	streamIdleTimeout time.Duration
+	drainTimeout        time.Duration
+	idleTimeout         time.Duration
+	requestTimeout      time.Duration
+	streamIdleTimeout   time.Duration
+	routeMaxGrpcTimeout time.Duration
 
 	// contour's log level control
 	logLevel int
@@ -346,6 +348,9 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				IngressRouteRootNamespaces: ctx.ingressRouteRootNamespaces(),
 				IngressClass:               ctx.ingressClass,
 				FieldLogger:                log.WithField("context", "KubernetesCache"),
+				RouteOptions: dag.RouteOptions{
+					MaxGrpcTimeout: ctx.routeMaxGrpcTimeout,
+				},
 			},
 			DisablePermitInsecure: ctx.DisablePermitInsecure,
 		},
