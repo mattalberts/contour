@@ -76,10 +76,6 @@ func Listener(name, address string, port int, lf []listener.ListenerFilter, filt
 	return l
 }
 
-func idleTimeout(d time.Duration) *time.Duration {
-	return &d
-}
-
 func tv(d time.Duration) *time.Duration {
 	if d > 0 {
 		return &d
@@ -87,9 +83,17 @@ func tv(d time.Duration) *time.Duration {
 	return nil
 }
 
+func tvd(d, v time.Duration) *time.Duration {
+	if d > 0 {
+		return &d
+	}
+	return &v
+}
+
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
 	EnableTracing  bool
+	IdleTimeout    time.Duration
 	RequestTimeout time.Duration
 }
 
@@ -135,7 +139,7 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 				AccessLog:                 FileAccessLog(accessLogPath),
 				UseRemoteAddress:          &types.BoolValue{Value: true}, // TODO(jbeda) should this ever be false?
 				NormalizePath:             &types.BoolValue{Value: true},
-				IdleTimeout:               idleTimeout(HTTPDefaultIdleTimeout),
+				IdleTimeout:               tvd(options.IdleTimeout, HTTPDefaultIdleTimeout),
 				RequestTimeout:            tv(options.RequestTimeout),
 				PreserveExternalRequestId: true,
 				Tracing:                   tracing(options.EnableTracing),
@@ -146,11 +150,12 @@ func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnecti
 
 // TCPProxyOptions defines optional configrations for tcp proxies
 type TCPProxyOptions struct {
+	IdleTimeout time.Duration
 }
 
 // TCPProxy creates a new TCPProxy filter.
 func TCPProxy(statPrefix string, proxy *dag.TCPProxy, accessLogPath string, options TCPProxyOptions) listener.Filter {
-	tcpIdleTimeout := idleTimeout(TCPDefaultIdleTimeout)
+	tcpIdleTimeout := tvd(options.IdleTimeout, TCPDefaultIdleTimeout)
 	switch len(proxy.Clusters) {
 	case 1:
 		return listener.Filter{
