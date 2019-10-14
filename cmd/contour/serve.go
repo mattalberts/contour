@@ -151,6 +151,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("enable-leader-election", "Enable leader election mechanism").BoolVar(&ctx.EnableLeaderElection)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.enableTracing)
+	serve.Flag("holdoff-delay", "Holdoff notifier delay for all updates").Default("100ms").DurationVar(&ctx.holdoffDelay)
+	serve.Flag("holdoff-max-delay", "Holdoff notifier max delay before forced updates").Default("500ms").DurationVar(&ctx.holdoffMaxDelay)
 	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.drainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.idleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.requestTimeout)
@@ -213,6 +215,10 @@ type serveContext struct {
 	streamIdleTimeout   time.Duration
 	routeIdleTimeout    time.Duration
 	routeMaxGrpcTimeout time.Duration
+
+	// contour's notification delay
+	holdoffDelay    time.Duration
+	holdoffMaxDelay time.Duration
 
 	// contour's log level control
 	logLevel int
@@ -343,8 +349,8 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				Client: contourClient,
 			},
 		},
-		HoldoffDelay:    100 * time.Millisecond,
-		HoldoffMaxDelay: 500 * time.Millisecond,
+		HoldoffDelay:    ctx.holdoffDelay,
+		HoldoffMaxDelay: ctx.holdoffMaxDelay,
 		Builder: dag.Builder{
 			Source: dag.KubernetesCache{
 				IngressRouteRootNamespaces: ctx.ingressRouteRootNamespaces(),
