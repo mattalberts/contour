@@ -188,6 +188,16 @@ func (b *Builder) addTCPService(svc *v1.Service, port *v1.ServicePort) *TCPServi
 	return s
 }
 
+func (b *Builder) defaultSecret(m Meta) Meta {
+	if m.name == "" && b.Source.DefaultSecret.Name != "" {
+		return Meta{
+			namespace: b.Source.DefaultSecret.Namespace,
+			name:      b.Source.DefaultSecret.Name,
+		}
+	}
+	return m
+}
+
 // lookupSecret returns a Secret if present or nil if the underlying kubernetes
 // secret fails validation or is missing.
 func (b *Builder) lookupSecret(m Meta, validate func(*v1.Secret) bool) *Secret {
@@ -293,7 +303,7 @@ func (b *Builder) validIngressRoutes() []*ingressroutev1.IngressRoute {
 func (b *Builder) computeSecureVirtualhosts() {
 	for _, ing := range b.Source.ingresses {
 		for _, tls := range ing.Spec.TLS {
-			m := splitSecret(tls.SecretName, ing.Namespace)
+			m := b.defaultSecret(splitSecret(tls.SecretName, ing.Namespace))
 			sec := b.lookupSecret(m, validSecret)
 			if sec != nil && b.delegationPermitted(m, ing.Namespace) {
 				for _, host := range tls.Hosts {
@@ -323,6 +333,14 @@ func (b *Builder) delegationPermitted(secret Meta, to string) bool {
 	if secret.namespace == to {
 		// secret is in the same namespace as target
 		return true
+	}
+	if b.Source.DefaultSecret.Name != "" {
+		if secret.namespace == b.Source.DefaultSecret.Namespace {
+			if secret.name == b.Source.DefaultSecret.Name {
+				// secret is the default secret (delegate to all)
+				return true
+			}
+		}
 	}
 	for _, d := range b.Source.delegations {
 		if d.Namespace != secret.namespace {
@@ -413,7 +431,7 @@ func (b *Builder) computeIngressRoutes() {
 		var enforceTLS, passthrough bool
 		if tls := ir.Spec.VirtualHost.TLS; tls != nil {
 			// attach secrets to TLS enabled vhosts
-			m := splitSecret(tls.SecretName, ir.Namespace)
+			m := b.defaultSecret(splitSecret(tls.SecretName, ir.Namespace))
 			sec := b.lookupSecret(m, validSecret)
 			if sec != nil && b.delegationPermitted(m, ir.Namespace) {
 				svhost := b.lookupSecureVirtualHost(host)
@@ -423,7 +441,7 @@ func (b *Builder) computeIngressRoutes() {
 			}
 			// passthrough is true if tls.secretName is not present, and
 			// tls.passthrough is set to true.
-			passthrough = isBlank(tls.SecretName) && tls.Passthrough
+			passthrough = isBlank(m.name) && tls.Passthrough
 
 			// If not passthrough and secret is invalid, then set status
 			if sec == nil && !passthrough {
