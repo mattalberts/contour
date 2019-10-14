@@ -80,9 +80,13 @@ func idleTimeout(d time.Duration) *time.Duration {
 	return &d
 }
 
+// HTTPConnectionOptions defines optional configrations for http conntections
+type HTTPConnectionOptions struct {
+}
+
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
 // for the supplied route and access log.
-func HTTPConnectionManager(routename, accessLogPath string) listener.Filter {
+func HTTPConnectionManager(routename, accessLogPath string, options HTTPConnectionOptions) listener.Filter {
 	return listener.Filter{
 		Name: util.HTTPConnectionManager,
 		ConfigType: &listener.Filter_TypedConfig{
@@ -129,8 +133,12 @@ func HTTPConnectionManager(routename, accessLogPath string) listener.Filter {
 	}
 }
 
+// TCPProxyOptions defines optional configrations for tcp proxies
+type TCPProxyOptions struct {
+}
+
 // TCPProxy creates a new TCPProxy filter.
-func TCPProxy(statPrefix string, proxy *dag.TCPProxy, accessLogPath string) listener.Filter {
+func TCPProxy(statPrefix string, proxy *dag.TCPProxy, accessLogPath string, options TCPProxyOptions) listener.Filter {
 	tcpIdleTimeout := idleTimeout(TCPDefaultIdleTimeout)
 	switch len(proxy.Clusters) {
 	case 1:
