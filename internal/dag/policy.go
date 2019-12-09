@@ -31,14 +31,14 @@ func retryPolicy(rp *v1beta1.RetryPolicy) *RetryPolicy {
 	}
 }
 
-func timeoutPolicy(tp *v1beta1.TimeoutPolicy, options RouteOptions) *TimeoutPolicy {
+func timeoutPolicy(tp *v1beta1.TimeoutPolicy, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}
 	return &TimeoutPolicy{
-		Timeout:        parseTimeout(tp.Request),
-		IdleTimeout:    parseTimeoutWithDefault(tp.Idle, options.IdleTimeout),
-		MaxGrpcTimeout: parseTimeoutWithDefault(tp.MaxGrpc, options.MaxGrpcTimeout),
+		Timeout:        maxtime(parseTimeout(tp.Request), limits.RequestTimeout),
+		IdleTimeout:    maxtime(parseTimeoutWithDefault(tp.Idle, options.IdleTimeout), limits.IdleTimeout),
+		MaxGrpcTimeout: maxtime(parseTimeoutWithDefault(tp.MaxGrpc, options.MaxGrpcTimeout), limits.MaxGrpcTimeout),
 	}
 }
 
@@ -87,6 +87,17 @@ func parseTimeoutWithDefault(timeout string, val time.Duration) time.Duration {
 		return -1
 	}
 	return d
+}
+
+func maxtime(val, max time.Duration) time.Duration {
+	switch {
+	case val == 0, max <= 0:
+		return val
+	case val > max, val < 0:
+		return max
+	default:
+		return val
+	}
 }
 
 func max(a, b int) int {

@@ -173,6 +173,9 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.streamIdleTimeout)
 	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&ctx.routeIdleTimeout)
 	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&ctx.routeMaxGrpcTimeout)
+	serve.Flag("route-idle-timeout-limit", "Upperbound idle timeout for all routes").DurationVar(&ctx.routeIdleTimeoutLimit)
+	serve.Flag("route-max-grpc-timeout-limit", "Upperbound max gRPC timeout for all routes").DurationVar(&ctx.routeMaxGrpcTimeoutLimit)
+	serve.Flag("route-request-timeout-limit", "Upperbound request timeout for all routes").DurationVar(&ctx.routeRequestTimeoutLimit)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 
 	return serve, &ctx
@@ -229,12 +232,15 @@ type serveContext struct {
 	enableTracing bool
 
 	// envoy's http listener timeout defaults
-	drainTimeout        time.Duration
-	idleTimeout         time.Duration
-	requestTimeout      time.Duration
-	streamIdleTimeout   time.Duration
-	routeIdleTimeout    time.Duration
-	routeMaxGrpcTimeout time.Duration
+	drainTimeout             time.Duration
+	idleTimeout              time.Duration
+	requestTimeout           time.Duration
+	streamIdleTimeout        time.Duration
+	routeIdleTimeout         time.Duration
+	routeMaxGrpcTimeout      time.Duration
+	routeRequestTimeoutLimit time.Duration
+	routeIdleTimeoutLimit    time.Duration
+	routeMaxGrpcTimeoutLimit time.Duration
 
 	// contour's default secret used for tls termination
 	defaultSecret resource
@@ -391,6 +397,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				RouteOptions: dag.RouteOptions{
 					IdleTimeout:    ctx.routeIdleTimeout,
 					MaxGrpcTimeout: ctx.routeMaxGrpcTimeout,
+				},
+				RouteLimits: dag.RouteLimits{
+					IdleTimeout:    ctx.routeIdleTimeoutLimit,
+					MaxGrpcTimeout: ctx.routeMaxGrpcTimeoutLimit,
+					RequestTimeout: ctx.routeRequestTimeoutLimit,
 				},
 			},
 			DisablePermitInsecure: ctx.DisablePermitInsecure,

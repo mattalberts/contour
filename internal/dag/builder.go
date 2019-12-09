@@ -375,7 +375,7 @@ func (b *Builder) computeIngresses() {
 					continue
 				}
 
-				r := route(ing, path, b.Source.RouteOptions)
+				r := route(ing, path, b.Source.RouteOptions, b.Source.RouteLimits)
 				r.Clusters = append(r.Clusters, &Cluster{Upstream: s})
 
 				var v Vertex = &PrefixRoute{
@@ -550,7 +550,7 @@ func (b *Builder) processRoutes(ir *ingressroutev1.IngressRoute, prefixMatch str
 					Websocket:     route.EnableWebsockets,
 					HTTPSUpgrade:  routeEnforceTLS(enforceTLS, route.PermitInsecure && !b.DisablePermitInsecure),
 					PrefixRewrite: route.PrefixRewrite,
-					TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy, b.Source.RouteOptions),
+					TimeoutPolicy: timeoutPolicy(route.TimeoutPolicy, b.Source.RouteOptions, b.Source.RouteLimits),
 					RetryPolicy:   retryPolicy(route.RetryPolicy),
 				},
 			}
@@ -729,7 +729,7 @@ func externalName(svc *v1.Service) string {
 }
 
 // route returns a dag.Route for the supplied Ingress.
-func route(ingress *v1beta1.Ingress, path string, options RouteOptions) Route {
+func route(ingress *v1beta1.Ingress, path string, options RouteOptions, limits RouteLimits) Route {
 	var retry *RetryPolicy
 	if retryOn, ok := ingress.Annotations[annotationRetryOn]; ok && len(retryOn) > 0 {
 		// if there is a non empty retry-on annotation, build a RetryPolicy manually.
@@ -750,15 +750,15 @@ func route(ingress *v1beta1.Ingress, path string, options RouteOptions) Route {
 		n := 0
 		tp := &TimeoutPolicy{}
 		if val, ok := ingress.Annotations[annotationRequestTimeout]; ok {
-			tp.Timeout = parseTimeout(val)
+			tp.Timeout = maxtime(parseTimeout(val), limits.RequestTimeout)
 			n++
 		}
 		if val, ok := ingress.Annotations[annotationIdleTimeout]; ok {
-			tp.IdleTimeout = parseTimeoutWithDefault(val, options.IdleTimeout)
+			tp.IdleTimeout = maxtime(parseTimeoutWithDefault(val, options.IdleTimeout), limits.IdleTimeout)
 			n++
 		}
 		if val, ok := ingress.Annotations[annotationMaxGrpcTimeout]; ok {
-			tp.MaxGrpcTimeout = parseTimeoutWithDefault(val, options.MaxGrpcTimeout)
+			tp.MaxGrpcTimeout = maxtime(parseTimeoutWithDefault(val, options.MaxGrpcTimeout), limits.MaxGrpcTimeout)
 			n++
 		}
 		if n > 0 {

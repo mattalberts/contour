@@ -42,6 +42,9 @@ type KubernetesCache struct {
 	// RouteOptions provides ptions for envoy's routes
 	RouteOptions RouteOptions
 
+	// RouteLimits provides limits for envoy's routes
+	RouteLimits RouteLimits
+
 	ingresses     map[Meta]*v1beta1.Ingress
 	ingressroutes map[Meta]*ingressroutev1.IngressRoute
 	secrets       map[Meta]*v1.Secret

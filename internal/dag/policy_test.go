@@ -80,9 +80,10 @@ func TestRetryPolicyIngressRoute(t *testing.T) {
 
 func TestTimeoutPolicyIngressRoute(t *testing.T) {
 	tests := map[string]struct {
-		tp   *v1beta1.TimeoutPolicy
-		opts RouteOptions
-		want *TimeoutPolicy
+		tp     *v1beta1.TimeoutPolicy
+		opts   RouteOptions
+		limits RouteLimits
+		want   *TimeoutPolicy
 	}{
 		"nil timeout policy": {
 			tp:   nil,
@@ -92,6 +93,17 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 			tp: &v1beta1.TimeoutPolicy{},
 			want: &TimeoutPolicy{
 				Timeout: 0 * time.Second,
+			},
+		},
+		"limit request timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Request: "1m30s",
+			},
+			limits: RouteLimits{
+				RequestTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				Timeout: 30 * time.Second,
 			},
 		},
 		"valid request timeout": {
@@ -122,6 +134,17 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 				Timeout: -1,
 			},
 		},
+		"limit infinite request timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Request: "infinity",
+			},
+			limits: RouteLimits{
+				RequestTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				Timeout: 30 * time.Second,
+			},
+		},
 		"default idle timeout": {
 			tp: &v1beta1.TimeoutPolicy{},
 			opts: RouteOptions{
@@ -129,6 +152,17 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 			},
 			want: &TimeoutPolicy{
 				IdleTimeout: 120 * time.Second,
+			},
+		},
+		"limit idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "1m30s",
+			},
+			limits: RouteLimits{
+				IdleTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 30 * time.Second,
 			},
 		},
 		"valid idle timeout": {
@@ -164,6 +198,20 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 				IdleTimeout: -1,
 			},
 		},
+		"limit infinite idle timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				Idle: "infinity",
+			},
+			opts: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			limits: RouteLimits{
+				IdleTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 30 * time.Second,
+			},
+		},
 		"default max_grpc timeout": {
 			tp: &v1beta1.TimeoutPolicy{},
 			opts: RouteOptions{
@@ -171,6 +219,17 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 			},
 			want: &TimeoutPolicy{
 				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
+		"limit max_grpc timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				MaxGrpc: "1m30s",
+			},
+			limits: RouteLimits{
+				MaxGrpcTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 30 * time.Second,
 			},
 		},
 		"valid max_grpc timeout": {
@@ -206,11 +265,25 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 				MaxGrpcTimeout: -1,
 			},
 		},
+		"limit infinite max_grpc timeout": {
+			tp: &v1beta1.TimeoutPolicy{
+				MaxGrpc: "infinity",
+			},
+			opts: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			limits: RouteLimits{
+				MaxGrpcTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 30 * time.Second,
+			},
+		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := timeoutPolicy(tc.tp, tc.opts)
+			got := timeoutPolicy(tc.tp, tc.opts, tc.limits)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}
