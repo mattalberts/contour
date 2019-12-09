@@ -35,13 +35,15 @@ import (
 	"github.com/heptio/contour/internal/dag"
 	"github.com/heptio/contour/internal/debug"
 	"github.com/heptio/contour/internal/envoy"
-	"github.com/heptio/contour/internal/grpc"
+	xds "github.com/heptio/contour/internal/grpc"
 	"github.com/heptio/contour/internal/httpsvc"
 	"github.com/heptio/contour/internal/k8s"
 	"github.com/heptio/contour/internal/metrics"
 	"github.com/heptio/contour/internal/workgroup"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v2"
 	coreV1 "k8s.io/api/core/v1"
@@ -51,6 +53,11 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
+)
+
+const (
+	// somewhat arbitrary limit to handle many, many, EDS streams
+	grpcMaxConcurrentStreams = 1 << 20
 )
 
 // registerServe registers the serve subcommand and flags
@@ -122,6 +129,12 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("xds-address", "xDS gRPC API address").StringVar(&ctx.xdsAddr)
 	serve.Flag("xds-port", "xDS gRPC API port").IntVar(&ctx.xdsPort)
+	serve.Flag("xds-max-streams", "xDS gRPC API MaxConcurrentStreams").Default(strconv.FormatUint(grpcMaxConcurrentStreams, 10)).Uint32Var(&ctx.xdsMaxStreams)
+	serve.Flag("xds-keepalive-policy-min-time", "xDS gRPC API KeepaliveEnforcementPolicy MinTime").DurationVar(&ctx.xdsKeepalivePolicyMinTime)
+	serve.Flag("xds-keepalive-max-age", "xDS gRPC API Keepalive MaxConnectionAge").DurationVar(&ctx.xdsKeepaliveMaxAge)
+	serve.Flag("xds-keepalive-max-idle", "xDS gRPC API Keepalive MaxConnectionIdle").DurationVar(&ctx.xdsKeepaliveMaxIdle)
+	serve.Flag("xds-keepalive-time", "xDS gRPC API Keepalive Time").Default("60s").DurationVar(&ctx.xdsKeepaliveTime)
+	serve.Flag("xds-keepalive-timeout", "xDS gRPC API Keepalive Timeout").Default("20s").DurationVar(&ctx.xdsKeepaliveTimeout)
 
 	serve.Flag("stats-address", "Envoy /stats interface address").StringVar(&ctx.statsAddr)
 	serve.Flag("stats-port", "Envoy /stats interface port").IntVar(&ctx.statsPort)
@@ -173,6 +186,12 @@ type serveContext struct {
 	// contour's xds service parameters
 	xdsAddr                         string
 	xdsPort                         int
+	xdsMaxStreams                   uint32
+	xdsKeepalivePolicyMinTime       time.Duration
+	xdsKeepaliveMaxAge              time.Duration
+	xdsKeepaliveMaxIdle             time.Duration
+	xdsKeepaliveTime                time.Duration
+	xdsKeepaliveTimeout             time.Duration
 	caFile, contourCert, contourKey string
 
 	// contour's debug handler parameters
@@ -573,13 +592,31 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			l = tls.NewListener(l, tlsconfig)
 		}
 
-		s := grpc.NewAPI(log, map[string]grpc.Resource{
+		s := xds.NewAPI(log, map[string]xds.Resource{
 			eh.CacheHandler.ClusterCache.TypeURL():  &eh.CacheHandler.ClusterCache,
 			eh.CacheHandler.RouteCache.TypeURL():    &eh.CacheHandler.RouteCache,
 			eh.CacheHandler.ListenerCache.TypeURL(): &eh.CacheHandler.ListenerCache,
 			eh.CacheHandler.SecretCache.TypeURL():   &eh.CacheHandler.SecretCache,
 			et.TypeURL():                            et,
-		})
+		},
+			// By default the Go grpc library defaults to a value of ~100 streams per
+			// connection. This number is likely derived from the HTTP/2 spec:
+			// https://http2.github.io/http2-spec/#SettingValues
+			// We need to raise this value because Envoy will open one EDS stream per
+			// CDS entry. There doesn't seem to be a penalty for increasing this value,
+			// so set it the limit similar to envoyproxy/go-control-plane#70.
+			grpc.MaxConcurrentStreams(ctx.xdsMaxStreams),
+			grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+				MinTime:             ctx.xdsKeepalivePolicyMinTime,
+				PermitWithoutStream: true,
+			}),
+			grpc.KeepaliveParams(keepalive.ServerParameters{
+				MaxConnectionIdle: ctx.xdsKeepaliveMaxIdle,
+				MaxConnectionAge:  ctx.xdsKeepaliveMaxAge,
+				Time:              ctx.xdsKeepaliveTime,
+				Timeout:           ctx.xdsKeepaliveTimeout,
+			}),
+		)
 		log.WithField("address", addr).Info("started")
 		defer log.Info("stopped")
 
