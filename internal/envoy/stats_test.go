@@ -30,6 +30,7 @@ func TestStatsListener(t *testing.T) {
 	tests := map[string]struct {
 		address string
 		port    int
+		options HTTPConnectionOptions
 		want    *v2.Listener
 	}{
 		"stats-health": {
@@ -82,6 +83,7 @@ func TestStatsListener(t *testing.T) {
 								}, {
 									Name: util.Router,
 								}},
+								IdleTimeout:   tv(HTTPDefaultIdleTimeout),
 								NormalizePath: &types.BoolValue{Value: true},
 							}),
 						},
@@ -92,7 +94,7 @@ func TestStatsListener(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := StatsListener(tc.address, tc.port)
+			got := StatsListener(tc.address, tc.port, tc.options)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}

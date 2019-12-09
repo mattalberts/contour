@@ -152,8 +152,8 @@ type ListenerCache struct {
 }
 
 // NewListenerCache returns an instance of a ListenerCache
-func NewListenerCache(address string, port int) ListenerCache {
-	stats := envoy.StatsListener(address, port)
+func NewListenerCache(address string, port int, options envoy.HTTPConnectionOptions) ListenerCache {
+	stats := envoy.StatsListener(address, port, options)
 	return ListenerCache{
 		staticValues: map[string]*v2.Listener{
 			stats.Name: stats,

@@ -347,8 +347,13 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					IdleTimeout: ctx.idleTimeout,
 				},
 			},
-			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
-			FieldLogger:   log.WithField("context", "CacheHandler"),
+			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.HTTPConnectionOptions{
+				DrainTimeout:      ctx.drainTimeout,
+				IdleTimeout:       ctx.idleTimeout,
+				RequestTimeout:    ctx.requestTimeout,
+				StreamIdleTimeout: ctx.streamIdleTimeout,
+			}),
+			FieldLogger: log.WithField("context", "CacheHandler"),
 			IngressRouteStatus: &k8s.IngressRouteStatus{
 				Client: contourClient,
 			},

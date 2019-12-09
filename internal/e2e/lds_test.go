@@ -1714,7 +1714,7 @@ func tcpproxy(t *testing.T, statPrefix, cluster string) listener.Filter {
 }
 
 func staticListener() *v2.Listener {
-	return envoy.StatsListener(statsAddress, statsPort)
+	return envoy.StatsListener(statsAddress, statsPort, envoy.HTTPConnectionOptions{})
 }
 
 func idleTimeout(d time.Duration) *time.Duration {

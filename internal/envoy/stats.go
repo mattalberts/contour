@@ -25,7 +25,7 @@ import (
 
 // StatsListener returns a *v2.Listener configured to serve prometheus
 // metrics on /stats.
-func StatsListener(address string, port int) *v2.Listener {
+func StatsListener(address string, port int, options HTTPConnectionOptions) *v2.Listener {
 	return &v2.Listener{
 		Name:    "stats-health",
 		Address: *SocketAddress(address, port),
@@ -73,7 +73,11 @@ func StatsListener(address string, port int) *v2.Listener {
 						}, {
 							Name: util.Router,
 						}},
-						NormalizePath: &types.BoolValue{Value: true},
+						DrainTimeout:      tv(options.DrainTimeout),
+						IdleTimeout:       tvd(options.IdleTimeout, HTTPDefaultIdleTimeout),
+						RequestTimeout:    tv(options.RequestTimeout),
+						StreamIdleTimeout: tv(options.StreamIdleTimeout),
+						NormalizePath:     &types.BoolValue{Value: true},
 					}),
 				},
 			}},
