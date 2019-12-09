@@ -365,7 +365,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					Namespace: ctx.defaultSecret.namespace,
 				},
 				RouteOptions: dag.RouteOptions{
-					IdleTimeout:    ctx.idleTimeout,
+					IdleTimeout:    ctx.routeIdleTimeout,
 					MaxGrpcTimeout: ctx.routeMaxGrpcTimeout,
 				},
 			},
