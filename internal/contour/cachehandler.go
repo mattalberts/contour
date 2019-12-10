@@ -43,10 +43,10 @@ func (ch *CacheHandler) OnChange(dag *dag.DAG) {
 	timer := prometheus.NewTimer(ch.CacheHandlerOnUpdateSummary)
 	defer timer.ObserveDuration()
 
-	ch.updateSecrets(dag)
+	ch.updateClusters(dag)
 	ch.updateListeners(dag)
 	ch.updateRoutes(dag)
-	ch.updateClusters(dag)
+	ch.updateSecrets(dag)
 
 	statuses := dag.Statuses()
 	ch.setIngressRouteStatus(statuses)
