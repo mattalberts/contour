@@ -36,6 +36,9 @@ type serveContext struct {
 	InCluster  bool   `yaml:"incluster,omitempty"`
 	Kubeconfig string `yaml:"kubeconfig,omitempty"`
 
+	// contour's log level control
+	logLevel int
+
 	// contour's xds service parameters
 	xdsAddr                         string
 	xdsPort                         int

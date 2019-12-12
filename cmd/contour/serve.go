@@ -116,6 +116,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("disable-leader-election", "Disable leader election mechanism").BoolVar(&ctx.DisableLeaderElection)
 
 	serve.Flag("use-extensions-v1beta1-ingress", "Subscribe to the deprecated extensions/v1beta1.Ingress type").BoolVar(&ctx.UseExtensionsV1beta1Ingress)
+
+	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 	return serve, ctx
 }
 
