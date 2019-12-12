@@ -66,6 +66,7 @@ func Listener(name, address string, port int, lf []*envoy_api_v2_listener.Listen
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
+	EnableTracing  bool
 	RequestTimeout time.Duration
 }
 
@@ -112,6 +113,7 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				AccessLog:        accesslogger,
 				UseRemoteAddress: protobuf.Bool(true),
 				NormalizePath:    protobuf.Bool(true),
+				Tracing:          tracing(options.EnableTracing),
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
@@ -123,6 +125,15 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 			}),
 		},
 	}
+}
+
+func tracing(enableTracing bool) *http.HttpConnectionManager_Tracing {
+	if enableTracing {
+		return &http.HttpConnectionManager_Tracing{
+			OperationName: http.HttpConnectionManager_Tracing_EGRESS,
+		}
+	}
+	return nil
 }
 
 // TCPProxyOptions defines optional configrations for tcp proxies

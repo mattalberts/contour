@@ -121,6 +121,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("use-extensions-v1beta1-ingress", "Subscribe to the deprecated extensions/v1beta1.Ingress type").BoolVar(&ctx.UseExtensionsV1beta1Ingress)
 
+	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.EnableTracing)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 	return serve, ctx
 }
@@ -158,11 +159,13 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				AccessLogFields:        ctx.AccessLogFields,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+					EnableTracing:  ctx.EnableTracing,
 					RequestTimeout: safetime(ctx.RequestTimeout),
 				},
 				TCPProxyOptions: envoy.TCPProxyOptions{},
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.HTTPConnectionOptions{
+				EnableTracing:  ctx.EnableTracing,
 				RequestTimeout: safetime(ctx.RequestTimeout),
 			}),
 			FieldLogger: log.WithField("context", "CacheHandler"),

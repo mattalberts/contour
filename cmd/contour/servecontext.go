@@ -94,6 +94,9 @@ type serveContext struct {
 
 	TLSConfig `yaml:"tls,omitempty"`
 
+	// EnableTracing configures envoy's listener open-tracing control
+	EnableTracing bool
+
 	// DisablePermitInsecure disables the use of the
 	// permitInsecure field in IngressRoute.
 	DisablePermitInsecure bool `yaml:"disablePermitInsecure,omitempty"`
