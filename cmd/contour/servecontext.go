@@ -107,6 +107,9 @@ type serveContext struct {
 	// LeaderElectionConfig can be set in the config file.
 	LeaderElectionConfig `yaml:"leaderelection,omitempty"`
 
+	// DrainTimeout sets the client drain timeout globally.
+	DrainTimeout time.Duration
+
 	// RequestTimeout sets the client idle timeout globally for http.
 	IdleTimeout time.Duration
 

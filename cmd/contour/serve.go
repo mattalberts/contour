@@ -122,6 +122,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("use-extensions-v1beta1-ingress", "Subscribe to the deprecated extensions/v1beta1.Ingress type").BoolVar(&ctx.UseExtensionsV1beta1Ingress)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.EnableTracing)
+	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.DrainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.StreamIdleTimeout)
@@ -164,6 +165,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 					EnableTracing:     ctx.EnableTracing,
+					DrainTimeout:      safetime(ctx.DrainTimeout),
 					IdleTimeout:       safetime(ctx.IdleTimeout),
 					RequestTimeout:    safetime(ctx.RequestTimeout),
 					StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
@@ -174,6 +176,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.HTTPConnectionOptions{
 				EnableTracing:     ctx.EnableTracing,
+				DrainTimeout:      safetime(ctx.DrainTimeout),
 				IdleTimeout:       safetime(ctx.IdleTimeout),
 				RequestTimeout:    safetime(ctx.RequestTimeout),
 				StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
