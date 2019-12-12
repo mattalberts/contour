@@ -122,6 +122,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("use-extensions-v1beta1-ingress", "Subscribe to the deprecated extensions/v1beta1.Ingress type").BoolVar(&ctx.UseExtensionsV1beta1Ingress)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.EnableTracing)
+	serve.Flag("delayed-close-timeout", "Delayed close timeout for all listeners").DurationVar(&ctx.DelayedCloseTimeout)
 	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.DrainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)

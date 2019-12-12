@@ -67,11 +67,12 @@ func Listener(name, address string, port int, lf []*envoy_api_v2_listener.Listen
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	EnableTracing     bool
-	DrainTimeout      time.Duration
-	IdleTimeout       time.Duration
-	RequestTimeout    time.Duration
-	StreamIdleTimeout time.Duration
+	EnableTracing       bool
+	DelayedCloseTimeout time.Duration
+	DrainTimeout        time.Duration
+	IdleTimeout         time.Duration
+	RequestTimeout      time.Duration
+	StreamIdleTimeout   time.Duration
 }
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
@@ -121,10 +122,11 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
-				DrainTimeout:      durationptoto(options.DrainTimeout),
-				IdleTimeout:       ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
-				RequestTimeout:    ptypes.DurationProto(options.RequestTimeout),
-				StreamIdleTimeout: durationptoto(options.StreamIdleTimeout),
+				DelayedCloseTimeout: durationptoto(options.DelayedCloseTimeout),
+				DrainTimeout:        durationptoto(options.DrainTimeout),
+				IdleTimeout:         ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
+				RequestTimeout:      ptypes.DurationProto(options.RequestTimeout),
+				StreamIdleTimeout:   durationptoto(options.StreamIdleTimeout),
 
 				// issue #1487 pass through X-Request-Id if provided.
 				PreserveExternalRequestId: true,
