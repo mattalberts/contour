@@ -257,6 +257,58 @@ func TestHTTPConnectionManager(t *testing.T) {
 				},
 			},
 		},
+		"idle timeout of 10s": {
+			routename:    "default/kuard",
+			accesslogger: FileAccessLogEnvoy("/dev/stdout"),
+			options: HTTPConnectionOptions{
+				IdleTimeout: 10 * time.Second,
+			},
+			want: &envoy_api_v2_listener.Filter{
+				Name: wellknown.HTTPConnectionManager,
+				ConfigType: &envoy_api_v2_listener.Filter_TypedConfig{
+					TypedConfig: toAny(&http.HttpConnectionManager{
+						StatPrefix: "default/kuard",
+						RouteSpecifier: &http.HttpConnectionManager_Rds{
+							Rds: &http.Rds{
+								RouteConfigName: "default/kuard",
+								ConfigSource: &envoy_api_v2_core.ConfigSource{
+									ConfigSourceSpecifier: &envoy_api_v2_core.ConfigSource_ApiConfigSource{
+										ApiConfigSource: &envoy_api_v2_core.ApiConfigSource{
+											ApiType: envoy_api_v2_core.ApiConfigSource_GRPC,
+											GrpcServices: []*envoy_api_v2_core.GrpcService{{
+												TargetSpecifier: &envoy_api_v2_core.GrpcService_EnvoyGrpc_{
+													EnvoyGrpc: &envoy_api_v2_core.GrpcService_EnvoyGrpc{
+														ClusterName: "contour",
+													},
+												},
+											}},
+										},
+									},
+								},
+							},
+						},
+						HttpFilters: []*http.HttpFilter{{
+							Name: wellknown.Gzip,
+						}, {
+							Name: wellknown.GRPCWeb,
+						}, {
+							Name: wellknown.Router,
+						}},
+						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
+							// Enable support for HTTP/1.0 requests that carry
+							// a Host: header. See #537.
+							AcceptHttp_10: true,
+						},
+						AccessLog:                 FileAccessLogEnvoy("/dev/stdout"),
+						UseRemoteAddress:          protobuf.Bool(true),
+						NormalizePath:             protobuf.Bool(true),
+						IdleTimeout:               protobuf.Duration(10 * time.Second),
+						RequestTimeout:            protobuf.Duration(0),
+						PreserveExternalRequestId: true,
+					}),
+				},
+			},
+		},
 		"request timeout of 10s": {
 			routename:    "default/kuard",
 			accesslogger: FileAccessLogEnvoy("/dev/stdout"),
@@ -393,6 +445,27 @@ func TestTCPProxy(t *testing.T) {
 						},
 						AccessLog:   FileAccessLogEnvoy(accessLogPath),
 						IdleTimeout: protobuf.Duration(9001 * time.Second),
+					}),
+				},
+			},
+		},
+		"idle timeout of 10s": {
+			proxy: &dag.TCPProxy{
+				Clusters: []*dag.Cluster{c1},
+			},
+			options: TCPProxyOptions{
+				IdleTimeout: 10 * time.Second,
+			},
+			want: &envoy_api_v2_listener.Filter{
+				Name: wellknown.TCPProxy,
+				ConfigType: &envoy_api_v2_listener.Filter_TypedConfig{
+					TypedConfig: toAny(&envoy_config_v2_tcpproxy.TcpProxy{
+						StatPrefix: statPrefix,
+						ClusterSpecifier: &envoy_config_v2_tcpproxy.TcpProxy_Cluster{
+							Cluster: Clustername(c1),
+						},
+						AccessLog:   FileAccessLogEnvoy(accessLogPath),
+						IdleTimeout: protobuf.Duration(10 * time.Second),
 					}),
 				},
 			},

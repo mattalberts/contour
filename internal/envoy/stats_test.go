@@ -89,6 +89,7 @@ func TestStatsListener(t *testing.T) {
 									Name: wellknown.Router,
 								}},
 								NormalizePath:  protobuf.Bool(true),
+								IdleTimeout:    ptypes.DurationProto(60 * time.Second),
 								RequestTimeout: ptypes.DurationProto(30 * time.Second),
 							}),
 						},

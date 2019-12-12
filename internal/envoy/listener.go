@@ -67,6 +67,7 @@ func Listener(name, address string, port int, lf []*envoy_api_v2_listener.Listen
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
 	EnableTracing  bool
+	IdleTimeout    time.Duration
 	RequestTimeout time.Duration
 }
 
@@ -117,7 +118,7 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
-				IdleTimeout:    protobuf.Duration(60 * time.Second),
+				IdleTimeout:    ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
 				RequestTimeout: ptypes.DurationProto(options.RequestTimeout),
 
 				// issue #1487 pass through X-Request-Id if provided.
@@ -136,8 +137,16 @@ func tracing(enableTracing bool) *http.HttpConnectionManager_Tracing {
 	return nil
 }
 
+func tvd(d, v time.Duration) time.Duration {
+	if d > 0 {
+		return d
+	}
+	return v
+}
+
 // TCPProxyOptions defines optional configrations for tcp proxies
 type TCPProxyOptions struct {
+	IdleTimeout time.Duration
 }
 
 // TCPProxy creates a new TCPProxy filter.
@@ -146,7 +155,7 @@ func TCPProxy(statPrefix string, proxy *dag.TCPProxy, accesslogger []*accesslog.
 	// The value of two and a half hours for reasons documented at
 	// https://github.com/projectcontour/contour/issues/1074
 	// Set to 9001 because now it's OVER NINE THOUSAND.
-	idleTimeout := protobuf.Duration(9001 * time.Second)
+	idleTimeout := ptypes.DurationProto(tvd(options.IdleTimeout, 9001*time.Second))
 
 	switch len(proxy.Clusters) {
 	case 1:

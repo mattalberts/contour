@@ -14,6 +14,8 @@
 package envoy
 
 import (
+	"time"
+
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_api_v2_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -75,6 +77,7 @@ func StatsListener(address string, port int, options HTTPConnectionOptions) *v2.
 							Name: wellknown.Router,
 						}},
 						NormalizePath:  protobuf.Bool(true),
+						IdleTimeout:    ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
 						RequestTimeout: ptypes.DurationProto(options.RequestTimeout),
 					}),
 				},

@@ -107,8 +107,14 @@ type serveContext struct {
 	// LeaderElectionConfig can be set in the config file.
 	LeaderElectionConfig `yaml:"leaderelection,omitempty"`
 
+	// RequestTimeout sets the client idle timeout globally for http.
+	IdleTimeout time.Duration
+
 	// RequestTimeout sets the client request timeout globally for Contour.
 	RequestTimeout time.Duration `yaml:"request-timeout,omitempty"`
+
+	// ProxyIdleTimeout sets the client idle timeout globally for tcp proxy.
+	ProxyIdleTimeout time.Duration
 
 	// Should Contour fall back to registering an informer for the deprecated
 	// extensions/v1beta1.Ingress type.
