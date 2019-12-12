@@ -116,7 +116,7 @@ func TestTLSCertificateDelegation(t *testing.T) {
 		Name:    "ingress_http",
 		Address: envoy.SocketAddress("0.0.0.0", 8080),
 		FilterChains: envoy.FilterChains(
-			envoy.HTTPConnectionManager("ingress_http", envoy.FileAccessLogEnvoy("/dev/stdout"), 0),
+			envoy.HTTPConnectionManager("ingress_http", envoy.FileAccessLogEnvoy("/dev/stdout"), envoy.HTTPConnectionOptions{}),
 		),
 	}
 
@@ -126,7 +126,7 @@ func TestTLSCertificateDelegation(t *testing.T) {
 		ListenerFilters: envoy.ListenerFilters(
 			envoy.TLSInspector(),
 		),
-		FilterChains: filterchaintls("example.com", sec1, envoy.HTTPConnectionManager("ingress_https", envoy.FileAccessLogEnvoy("/dev/stdout"), 0), "h2", "http/1.1"),
+		FilterChains: filterchaintls("example.com", sec1, envoy.HTTPConnectionManager("ingress_https", envoy.FileAccessLogEnvoy("/dev/stdout"), envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 
 	c.Request(listenerType).Equals(&v2.DiscoveryResponse{

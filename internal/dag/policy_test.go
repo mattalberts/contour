@@ -228,8 +228,10 @@ func TestRetryPolicyIngressRoute(t *testing.T) {
 
 func TestTimeoutPolicyIngressRoute(t *testing.T) {
 	tests := map[string]struct {
-		tp   *ingressroutev1.TimeoutPolicy
-		want *TimeoutPolicy
+		tp      *ingressroutev1.TimeoutPolicy
+		options RouteOptions
+		limits  RouteLimits
+		want    *TimeoutPolicy
 	}{
 		"nil timeout policy": {
 			tp:   nil,
@@ -273,7 +275,7 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := ingressrouteTimeoutPolicy(tc.tp)
+			got := ingressrouteTimeoutPolicy(tc.tp, tc.options, tc.limits)
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -281,8 +283,10 @@ func TestTimeoutPolicyIngressRoute(t *testing.T) {
 
 func TestTimeoutPolicy(t *testing.T) {
 	tests := map[string]struct {
-		tp   *projcontour.TimeoutPolicy
-		want *TimeoutPolicy
+		tp      *projcontour.TimeoutPolicy
+		options RouteOptions
+		limits  RouteLimits
+		want    *TimeoutPolicy
 	}{
 		"nil timeout policy": {
 			tp:   nil,
@@ -334,7 +338,7 @@ func TestTimeoutPolicy(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := timeoutPolicy(tc.tp)
+			got := timeoutPolicy(tc.tp, tc.options, tc.limits)
 			assert.Equal(t, tc.want, got)
 		})
 	}

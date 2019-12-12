@@ -19,12 +19,13 @@ import (
 	envoy_api_v2_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	http "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
 
 // StatsListener returns a *v2.Listener configured to serve prometheus
 // metrics on /stats.
-func StatsListener(address string, port int) *v2.Listener {
+func StatsListener(address string, port int, options HTTPConnectionOptions) *v2.Listener {
 	return &v2.Listener{
 		Name:    "stats-health",
 		Address: SocketAddress(address, port),
@@ -73,7 +74,8 @@ func StatsListener(address string, port int) *v2.Listener {
 						HttpFilters: []*http.HttpFilter{{
 							Name: wellknown.Router,
 						}},
-						NormalizePath: protobuf.Bool(true),
+						NormalizePath:  protobuf.Bool(true),
+						RequestTimeout: ptypes.DurationProto(options.RequestTimeout),
 					}),
 				},
 			},

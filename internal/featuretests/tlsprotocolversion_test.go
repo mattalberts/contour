@@ -87,7 +87,7 @@ func TestTLSMinimumProtocolVersion(t *testing.T) {
 				ListenerFilters: envoy.ListenerFilters(
 					envoy.TLSInspector(),
 				),
-				FilterChains: filterchaintls("kuard.example.com", sec1, envoy.HTTPConnectionManager("ingress_https", envoy.FileAccessLogEnvoy("/dev/stdout"), 0), "h2", "http/1.1"),
+				FilterChains: filterchaintls("kuard.example.com", sec1, envoy.HTTPConnectionManager("ingress_https", envoy.FileAccessLogEnvoy("/dev/stdout"), envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 			},
 		),
 		TypeUrl: listenerType,
@@ -126,7 +126,7 @@ func TestTLSMinimumProtocolVersion(t *testing.T) {
 		ListenerFilters: envoy.ListenerFilters(
 			envoy.TLSInspector(),
 		),
-		FilterChains: filterchaintls("kuard.example.com", sec1, envoy.HTTPConnectionManager("ingress_https", envoy.FileAccessLogEnvoy("/dev/stdout"), 0), "h2", "http/1.1"),
+		FilterChains: filterchaintls("kuard.example.com", sec1, envoy.HTTPConnectionManager("ingress_https", envoy.FileAccessLogEnvoy("/dev/stdout"), envoy.HTTPConnectionOptions{}), "h2", "http/1.1"),
 	}
 	// easier to patch this up than add more params to filterchaintls
 	l1.FilterChains[0].TlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = envoy_api_v2_auth.TlsParameters_TLSv1_3

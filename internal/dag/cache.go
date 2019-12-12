@@ -41,6 +41,12 @@ type KubernetesCache struct {
 	// If not set, defaults to DEFAULT_INGRESS_CLASS.
 	IngressClass string
 
+	// RouteOptions provides options defaults for envoy's routes
+	RouteOptions RouteOptions
+
+	// RouteLimits provides options limits for envoy's routes
+	RouteLimits RouteLimits
+
 	ingresses            map[Meta]*v1beta1.Ingress
 	ingressroutes        map[Meta]*ingressroutev1.IngressRoute
 	httpproxies          map[Meta]*projectcontour.HTTPProxy

@@ -15,12 +15,14 @@ package envoy
 
 import (
 	"testing"
+	"time"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_api_v2_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	http "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/google/go-cmp/cmp"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
@@ -29,11 +31,15 @@ func TestStatsListener(t *testing.T) {
 	tests := map[string]struct {
 		address string
 		port    int
+		options HTTPConnectionOptions
 		want    *v2.Listener
 	}{
 		"stats-health": {
 			address: "127.0.0.127",
 			port:    8123,
+			options: HTTPConnectionOptions{
+				RequestTimeout: 30 * time.Second,
+			},
 			want: &v2.Listener{
 				Name:    "stats-health",
 				Address: SocketAddress("127.0.0.127", 8123),
@@ -82,7 +88,8 @@ func TestStatsListener(t *testing.T) {
 								HttpFilters: []*http.HttpFilter{{
 									Name: wellknown.Router,
 								}},
-								NormalizePath: protobuf.Bool(true),
+								NormalizePath:  protobuf.Bool(true),
+								RequestTimeout: ptypes.DurationProto(30 * time.Second),
 							}),
 						},
 					},
@@ -92,7 +99,7 @@ func TestStatsListener(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := StatsListener(tc.address, tc.port)
+			got := StatsListener(tc.address, tc.port, tc.options)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Fatal(diff)
 			}

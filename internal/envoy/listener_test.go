@@ -46,13 +46,13 @@ func TestListener(t *testing.T) {
 			address: "0.0.0.0",
 			port:    9000,
 			f: []*envoy_api_v2_listener.Filter{
-				HTTPConnectionManager("http", FileAccessLogEnvoy("/dev/null"), 0),
+				HTTPConnectionManager("http", FileAccessLogEnvoy("/dev/null"), HTTPConnectionOptions{}),
 			},
 			want: &v2.Listener{
 				Name:    "http",
 				Address: SocketAddress("0.0.0.0", 9000),
 				FilterChains: FilterChains(
-					HTTPConnectionManager("http", FileAccessLogEnvoy("/dev/null"), 0),
+					HTTPConnectionManager("http", FileAccessLogEnvoy("/dev/null"), HTTPConnectionOptions{}),
 				),
 			},
 		},
@@ -64,7 +64,7 @@ func TestListener(t *testing.T) {
 				ProxyProtocol(),
 			},
 			f: []*envoy_api_v2_listener.Filter{
-				HTTPConnectionManager("http-proxy", FileAccessLogEnvoy("/dev/null"), 0),
+				HTTPConnectionManager("http-proxy", FileAccessLogEnvoy("/dev/null"), HTTPConnectionOptions{}),
 			},
 			want: &v2.Listener{
 				Name:    "http-proxy",
@@ -73,7 +73,7 @@ func TestListener(t *testing.T) {
 					ProxyProtocol(),
 				),
 				FilterChains: FilterChains(
-					HTTPConnectionManager("http-proxy", FileAccessLogEnvoy("/dev/null"), 0),
+					HTTPConnectionManager("http-proxy", FileAccessLogEnvoy("/dev/null"), HTTPConnectionOptions{}),
 				),
 			},
 		},
@@ -202,15 +202,15 @@ func TestDownstreamTLSContext(t *testing.T) {
 
 func TestHTTPConnectionManager(t *testing.T) {
 	tests := map[string]struct {
-		routename      string
-		accesslogger   []*envoy_api_v2_accesslog.AccessLog
-		requestTimeout time.Duration
-		want           *envoy_api_v2_listener.Filter
+		routename    string
+		accesslogger []*envoy_api_v2_accesslog.AccessLog
+		options      HTTPConnectionOptions
+		want         *envoy_api_v2_listener.Filter
 	}{
 		"default": {
-			routename:      "default/kuard",
-			accesslogger:   FileAccessLogEnvoy("/dev/stdout"),
-			requestTimeout: 0,
+			routename:    "default/kuard",
+			accesslogger: FileAccessLogEnvoy("/dev/stdout"),
+			options:      HTTPConnectionOptions{},
 			want: &envoy_api_v2_listener.Filter{
 				Name: wellknown.HTTPConnectionManager,
 				ConfigType: &envoy_api_v2_listener.Filter_TypedConfig{
@@ -258,9 +258,11 @@ func TestHTTPConnectionManager(t *testing.T) {
 			},
 		},
 		"request timeout of 10s": {
-			routename:      "default/kuard",
-			accesslogger:   FileAccessLogEnvoy("/dev/stdout"),
-			requestTimeout: 10 * time.Second,
+			routename:    "default/kuard",
+			accesslogger: FileAccessLogEnvoy("/dev/stdout"),
+			options: HTTPConnectionOptions{
+				RequestTimeout: 10 * time.Second,
+			},
 			want: &envoy_api_v2_listener.Filter{
 				Name: wellknown.HTTPConnectionManager,
 				ConfigType: &envoy_api_v2_listener.Filter_TypedConfig{
@@ -310,7 +312,7 @@ func TestHTTPConnectionManager(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := HTTPConnectionManager(tc.routename, tc.accesslogger, tc.requestTimeout)
+			got := HTTPConnectionManager(tc.routename, tc.accesslogger, tc.options)
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -347,8 +349,9 @@ func TestTCPProxy(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		proxy *dag.TCPProxy
-		want  *envoy_api_v2_listener.Filter
+		proxy   *dag.TCPProxy
+		options TCPProxyOptions
+		want    *envoy_api_v2_listener.Filter
 	}{
 		"single cluster": {
 			proxy: &dag.TCPProxy{
@@ -398,7 +401,7 @@ func TestTCPProxy(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := TCPProxy(statPrefix, tc.proxy, FileAccessLogEnvoy(accessLogPath))
+			got := TCPProxy(statPrefix, tc.proxy, FileAccessLogEnvoy(accessLogPath), tc.options)
 			assert.Equal(t, tc.want, got)
 		})
 	}

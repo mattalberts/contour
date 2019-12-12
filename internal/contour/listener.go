@@ -16,7 +16,6 @@ package contour
 import (
 	"sort"
 	"sync"
-	"time"
 
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -85,8 +84,11 @@ type ListenerVisitorConfig struct {
 	// Defaults to a particular set of fields.
 	AccessLogFields []string
 
-	// RequestTimeout configures the request_timeout for all Connection Managers.
-	RequestTimeout time.Duration
+	// HTTPConnectionOptions default options for HTTPConnectionManagers.
+	HTTPConnectionOptions envoy.HTTPConnectionOptions
+
+	// TCPProxyOptions default options for TCPProxies.
+	TCPProxyOptions envoy.TCPProxyOptions
 }
 
 // httpAddress returns the port for the HTTP (non TLS)
@@ -179,19 +181,6 @@ func (lvc *ListenerVisitorConfig) newSecureAccessLog() []*envoy_api_v2_accesslog
 	}
 }
 
-// requestTimeout sets any durations in lvc.RequestTimeout <0 to 0 so that Envoy ends up with a positive duration.
-// for the request_timeout value we are passing, there are only two valid values:
-// 0 - disabled
-// >0 duration - the timeout.
-// The value may be unset, but we always set it to 0.
-func (lvc *ListenerVisitorConfig) requestTimeout() time.Duration {
-
-	if lvc.RequestTimeout < 0 {
-		return 0
-	}
-	return lvc.RequestTimeout
-}
-
 // minProtocolVersion returns the requested minimum TLS protocol
 // version or envoy_api_v2_auth.TlsParameters_TLSv1_1 if not configured {
 func (lvc *ListenerVisitorConfig) minProtoVersion() envoy_api_v2_auth.TlsParameters_TlsProtocol {
@@ -210,8 +199,8 @@ type ListenerCache struct {
 }
 
 // NewListenerCache returns an instance of a ListenerCache
-func NewListenerCache(address string, port int) ListenerCache {
-	stats := envoy.StatsListener(address, port)
+func NewListenerCache(address string, port int, options envoy.HTTPConnectionOptions) ListenerCache {
+	stats := envoy.StatsListener(address, port, options)
 	return ListenerCache{
 		staticValues: map[string]*v2.Listener{
 			stats.Name: stats,
@@ -304,7 +293,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 			ENVOY_HTTP_LISTENER,
 			lvc.httpAddress(), lvc.httpPort(),
 			proxyProtocol(lvc.UseProxyProto),
-			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.newInsecureAccessLog(), lvc.requestTimeout()),
+			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.newInsecureAccessLog(), lvc.HTTPConnectionOptions),
 		)
 
 	}
@@ -356,12 +345,12 @@ func (v *listenerVisitor) visit(vertex dag.Vertex) {
 		v.http = true
 	case *dag.SecureVirtualHost:
 		filters := envoy.Filters(
-			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.ListenerVisitorConfig.newSecureAccessLog(), v.ListenerVisitorConfig.requestTimeout()),
+			envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, v.ListenerVisitorConfig.newSecureAccessLog(), v.ListenerVisitorConfig.HTTPConnectionOptions),
 		)
 		alpnProtos := []string{"h2", "http/1.1"}
 		if vh.TCPProxy != nil {
 			filters = envoy.Filters(
-				envoy.TCPProxy(ENVOY_HTTPS_LISTENER, vh.TCPProxy, v.ListenerVisitorConfig.newSecureAccessLog()),
+				envoy.TCPProxy(ENVOY_HTTPS_LISTENER, vh.TCPProxy, v.ListenerVisitorConfig.newSecureAccessLog(), v.ListenerVisitorConfig.TCPProxyOptions),
 			)
 			alpnProtos = nil // do not offer ALPN
 		}

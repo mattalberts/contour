@@ -52,7 +52,7 @@ func ingressRetryPolicy(ingress *v1beta1.Ingress) *RetryPolicy {
 	}
 }
 
-func ingressTimeoutPolicy(ingress *v1beta1.Ingress) *TimeoutPolicy {
+func ingressTimeoutPolicy(ingress *v1beta1.Ingress, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
 	response := compatAnnotation(ingress, "response-timeout")
 	if len(response) == 0 {
 		// Note: due to a misunderstanding the name of the annotation is
@@ -67,10 +67,10 @@ func ingressTimeoutPolicy(ingress *v1beta1.Ingress) *TimeoutPolicy {
 	// construct and use the ingressroute timeout policy logic.
 	return timeoutPolicy(&projcontour.TimeoutPolicy{
 		Response: response,
-	})
+	}, options, limits)
 }
 
-func ingressrouteTimeoutPolicy(tp *ingressroutev1.TimeoutPolicy) *TimeoutPolicy {
+func ingressrouteTimeoutPolicy(tp *ingressroutev1.TimeoutPolicy, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}
@@ -82,7 +82,7 @@ func ingressrouteTimeoutPolicy(tp *ingressroutev1.TimeoutPolicy) *TimeoutPolicy 
 	}
 }
 
-func timeoutPolicy(tp *projcontour.TimeoutPolicy) *TimeoutPolicy {
+func timeoutPolicy(tp *projcontour.TimeoutPolicy, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}

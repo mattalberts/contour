@@ -64,9 +64,14 @@ func Listener(name, address string, port int, lf []*envoy_api_v2_listener.Listen
 	return l
 }
 
+// HTTPConnectionOptions defines optional configrations for http conntections
+type HTTPConnectionOptions struct {
+	RequestTimeout time.Duration
+}
+
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
 // for the supplied route, access log, and client request timeout.
-func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog, requestTimeout time.Duration) *envoy_api_v2_listener.Filter {
+func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog, options HTTPConnectionOptions) *envoy_api_v2_listener.Filter {
 
 	return &envoy_api_v2_listener.Filter{
 		Name: wellknown.HTTPConnectionManager,
@@ -111,7 +116,7 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
 				IdleTimeout:    protobuf.Duration(60 * time.Second),
-				RequestTimeout: ptypes.DurationProto(requestTimeout),
+				RequestTimeout: ptypes.DurationProto(options.RequestTimeout),
 
 				// issue #1487 pass through X-Request-Id if provided.
 				PreserveExternalRequestId: true,
@@ -120,8 +125,12 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 	}
 }
 
+// TCPProxyOptions defines optional configrations for tcp proxies
+type TCPProxyOptions struct {
+}
+
 // TCPProxy creates a new TCPProxy filter.
-func TCPProxy(statPrefix string, proxy *dag.TCPProxy, accesslogger []*accesslog.AccessLog) *envoy_api_v2_listener.Filter {
+func TCPProxy(statPrefix string, proxy *dag.TCPProxy, accesslogger []*accesslog.AccessLog, options TCPProxyOptions) *envoy_api_v2_listener.Filter {
 	// Set the idle timeout in seconds for connections through a TCP Proxy type filter.
 	// The value of two and a half hours for reasons documented at
 	// https://github.com/projectcontour/contour/issues/1074

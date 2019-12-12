@@ -23,13 +23,14 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	envoy "github.com/envoyproxy/go-control-plane/pkg/cache"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/projectcontour/contour/apis/generated/clientset/versioned/fake"
 	"github.com/projectcontour/contour/internal/assert"
 	"github.com/projectcontour/contour/internal/contour"
+	"github.com/projectcontour/contour/internal/envoy"
 	cgrpc "github.com/projectcontour/contour/internal/grpc"
 	"github.com/projectcontour/contour/internal/k8s"
 	"github.com/projectcontour/contour/internal/metrics"
@@ -42,11 +43,11 @@ import (
 )
 
 const (
-	endpointType = envoy.EndpointType
-	clusterType  = envoy.ClusterType
-	routeType    = envoy.RouteType
-	listenerType = envoy.ListenerType
-	secretType   = envoy.SecretType
+	endpointType = envoycache.EndpointType
+	clusterType  = envoycache.ClusterType
+	routeType    = envoycache.RouteType
+	listenerType = envoycache.ListenerType
+	secretType   = envoycache.SecretType
 	statsAddress = "0.0.0.0"
 	statsPort    = 8002
 )
@@ -70,7 +71,7 @@ func setup(t *testing.T, opts ...func(*contour.EventHandler)) (cache.ResourceEve
 	r := prometheus.NewRegistry()
 	ch := &contour.CacheHandler{
 		Metrics:       metrics.NewMetrics(r),
-		ListenerCache: contour.NewListenerCache(statsAddress, statsPort),
+		ListenerCache: contour.NewListenerCache(statsAddress, statsPort, envoy.HTTPConnectionOptions{}),
 		FieldLogger:   log,
 	}
 

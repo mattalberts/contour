@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"strconv"
 	"syscall"
+	"time"
 
 	"k8s.io/client-go/tools/cache"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/projectcontour/contour/internal/contour"
 	"github.com/projectcontour/contour/internal/dag"
 	"github.com/projectcontour/contour/internal/debug"
+	"github.com/projectcontour/contour/internal/envoy"
 	cgrpc "github.com/projectcontour/contour/internal/grpc"
 	"github.com/projectcontour/contour/internal/httpsvc"
 	"github.com/projectcontour/contour/internal/k8s"
@@ -155,10 +157,15 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				AccessLogType:          ctx.AccessLogFormat,
 				AccessLogFields:        ctx.AccessLogFields,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
-				RequestTimeout:         ctx.RequestTimeout,
+				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+					RequestTimeout: safetime(ctx.RequestTimeout),
+				},
+				TCPProxyOptions: envoy.TCPProxyOptions{},
 			},
-			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
-			FieldLogger:   log.WithField("context", "CacheHandler"),
+			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.HTTPConnectionOptions{
+				RequestTimeout: safetime(ctx.RequestTimeout),
+			}),
+			FieldLogger: log.WithField("context", "CacheHandler"),
 		},
 		HoldoffDelay:    ctx.holdoffDelay,
 		HoldoffMaxDelay: ctx.holdoffMaxDelay,
@@ -170,6 +177,8 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				RootNamespaces: ctx.ingressRouteRootNamespaces(),
 				IngressClass:   ctx.ingressClass,
 				FieldLogger:    log.WithField("context", "KubernetesCache"),
+				RouteOptions:   dag.RouteOptions{},
+				RouteLimits:    dag.RouteLimits{},
 			},
 			DisablePermitInsecure: ctx.DisablePermitInsecure,
 		},
@@ -393,4 +402,11 @@ func startInformer(inf informer, log logrus.FieldLogger) func(stop <-chan struct
 		<-stop
 		return nil
 	}
+}
+
+func safetime(val time.Duration) time.Duration {
+	if val < 0 {
+		return 0
+	}
+	return val
 }

@@ -353,7 +353,7 @@ func (b *Builder) computeIngressRule(ing *v1beta1.Ingress, rule v1beta1.IngressR
 			continue
 		}
 
-		r := route(ing, path, s)
+		r := route(ing, path, s, b.Source.RouteOptions, b.Source.RouteLimits)
 
 		// should we create port 80 routes for this ingress
 		if tlsRequired(ing) || httpAllowed(ing) {
@@ -576,7 +576,7 @@ func (b *Builder) computeRoutes(sw *ObjectStatusWriter, proxy *projcontour.HTTPP
 			HeaderConditions: mergeHeaderConditions(conds),
 			Websocket:        route.EnableWebsockets,
 			HTTPSUpgrade:     routeEnforceTLS(enforceTLS, route.PermitInsecure && !b.DisablePermitInsecure),
-			TimeoutPolicy:    timeoutPolicy(route.TimeoutPolicy),
+			TimeoutPolicy:    timeoutPolicy(route.TimeoutPolicy, b.Source.RouteOptions, b.Source.RouteLimits),
 			RetryPolicy:      retryPolicy(route.RetryPolicy),
 		}
 
@@ -754,7 +754,7 @@ func (b *Builder) processIngressRoutes(sw *ObjectStatusWriter, ir *ingressroutev
 				Websocket:     route.EnableWebsockets,
 				HTTPSUpgrade:  routeEnforceTLS(enforceTLS, permitInsecure),
 				PrefixRewrite: route.PrefixRewrite,
-				TimeoutPolicy: ingressrouteTimeoutPolicy(route.TimeoutPolicy),
+				TimeoutPolicy: ingressrouteTimeoutPolicy(route.TimeoutPolicy, b.Source.RouteOptions, b.Source.RouteLimits),
 				RetryPolicy:   retryPolicy(route.RetryPolicy),
 			}
 			for _, service := range route.Services {
@@ -1020,12 +1020,12 @@ func externalName(svc *v1.Service) string {
 }
 
 // route builds a dag.Route for the supplied Ingress.
-func route(ingress *v1beta1.Ingress, path string, service *Service) *Route {
+func route(ingress *v1beta1.Ingress, path string, service *Service, options RouteOptions, limits RouteLimits) *Route {
 	wr := websocketRoutes(ingress)
 	r := &Route{
 		HTTPSUpgrade:  tlsRequired(ingress),
 		Websocket:     wr[path],
-		TimeoutPolicy: ingressTimeoutPolicy(ingress),
+		TimeoutPolicy: ingressTimeoutPolicy(ingress, options, limits),
 		RetryPolicy:   ingressRetryPolicy(ingress),
 		Clusters: []*Cluster{{
 			Upstream: service,
