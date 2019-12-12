@@ -50,6 +50,7 @@ func main() {
 	cli.Flag("cafile", "CA bundle file for connecting to a TLS-secured Contour").Envar("CLI_CAFILE").StringVar(&client.CAFile)
 	cli.Flag("cert-file", "Client certificate file for connecting to a TLS-secured Contour").Envar("CLI_CERT_FILE").StringVar(&client.ClientCert)
 	cli.Flag("key-file", "Client key file for connecting to a TLS-secured Contour").Envar("CLI_KEY_FILE").StringVar(&client.ClientKey)
+	cli.Flag("deadline", "Client request deadline").DurationVar(&client.Deadline)
 
 	var resources []string
 	cds := cli.Command("cds", "watch services.")
@@ -62,6 +63,7 @@ func main() {
 	rds.Arg("resources", "RDS resource filter").StringsVar(&resources)
 	sds := cli.Command("sds", "watch secrets.")
 	sds.Arg("resources", "SDS resource filter").StringsVar(&resources)
+	xds := cli.Command("xds", "health check the xDS server")
 
 	serve, serveCtx := registerServe(app)
 
@@ -94,6 +96,8 @@ func main() {
 		log.SetLevel(logruslevel(serveCtx.logLevel))
 		log.Infof("args: %v", args)
 		doServe(log, serveCtx)
+	case xds.FullCommand():
+		client.Health()
 	default:
 		app.Usage(args)
 		os.Exit(2)

@@ -21,11 +21,14 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 // Client holds the details for the cli client to connect to.
@@ -34,6 +37,7 @@ type Client struct {
 	CAFile      string
 	ClientCert  string
 	ClientKey   string
+	Deadline    time.Duration
 }
 
 func (c *Client) dial() *grpc.ClientConn {
@@ -108,6 +112,27 @@ func (c *Client) RouteStream() v2.ClusterDiscoveryService_StreamClustersClient {
 	stream, err := v2.NewRouteDiscoveryServiceClient(c.dial()).StreamRoutes(context.Background())
 	check(err)
 	return stream
+}
+
+// Health verifies connections can be made to the xDS server.
+func (c *Client) Health() {
+	conn := c.dial()
+	defer conn.Close()
+
+	ctx, cancel := context.Background(), func() {}
+	if c.Deadline > 0 {
+		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(c.Deadline))
+	}
+	defer cancel()
+
+	err := conn.Invoke(ctx, "/contour.health/Check", nil, nil)
+	check(ctx.Err())
+	if s, ok := status.FromError(err); ok {
+		switch s.Code() {
+		case codes.Unavailable:
+			check(err)
+		}
+	}
 }
 
 type stream interface {
