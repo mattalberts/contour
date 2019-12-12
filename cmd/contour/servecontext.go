@@ -113,6 +113,9 @@ type serveContext struct {
 	// RequestTimeout sets the client request timeout globally for Contour.
 	RequestTimeout time.Duration `yaml:"request-timeout,omitempty"`
 
+	// StreamIdleTimeout the client stream idle timeout globally for http.
+	StreamIdleTimeout time.Duration
+
 	// ProxyIdleTimeout sets the client idle timeout globally for tcp proxy.
 	ProxyIdleTimeout time.Duration
 

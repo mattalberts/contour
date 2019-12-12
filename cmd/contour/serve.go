@@ -124,6 +124,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.EnableTracing)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
+	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.StreamIdleTimeout)
 	serve.Flag("proxy-idle-timeout", "TCP proxy idle timeout for all listeners").DurationVar(&ctx.ProxyIdleTimeout)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 	return serve, ctx
@@ -162,18 +163,20 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				AccessLogFields:        ctx.AccessLogFields,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
-					EnableTracing:  ctx.EnableTracing,
-					IdleTimeout:    safetime(ctx.IdleTimeout),
-					RequestTimeout: safetime(ctx.RequestTimeout),
+					EnableTracing:     ctx.EnableTracing,
+					IdleTimeout:       safetime(ctx.IdleTimeout),
+					RequestTimeout:    safetime(ctx.RequestTimeout),
+					StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
 				},
 				TCPProxyOptions: envoy.TCPProxyOptions{
 					IdleTimeout: safetime(ctx.ProxyIdleTimeout),
 				},
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.HTTPConnectionOptions{
-				EnableTracing:  ctx.EnableTracing,
-				IdleTimeout:    safetime(ctx.IdleTimeout),
-				RequestTimeout: safetime(ctx.RequestTimeout),
+				EnableTracing:     ctx.EnableTracing,
+				IdleTimeout:       safetime(ctx.IdleTimeout),
+				RequestTimeout:    safetime(ctx.RequestTimeout),
+				StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
 			}),
 			FieldLogger: log.WithField("context", "CacheHandler"),
 		},

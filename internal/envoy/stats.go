@@ -76,9 +76,10 @@ func StatsListener(address string, port int, options HTTPConnectionOptions) *v2.
 						HttpFilters: []*http.HttpFilter{{
 							Name: wellknown.Router,
 						}},
-						NormalizePath:  protobuf.Bool(true),
-						IdleTimeout:    ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
-						RequestTimeout: ptypes.DurationProto(options.RequestTimeout),
+						NormalizePath:     protobuf.Bool(true),
+						IdleTimeout:       ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
+						RequestTimeout:    ptypes.DurationProto(options.RequestTimeout),
+						StreamIdleTimeout: durationptoto(options.StreamIdleTimeout),
 					}),
 				},
 			},

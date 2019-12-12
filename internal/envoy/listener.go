@@ -28,6 +28,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/projectcontour/contour/internal/dag"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
@@ -66,9 +67,10 @@ func Listener(name, address string, port int, lf []*envoy_api_v2_listener.Listen
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	EnableTracing  bool
-	IdleTimeout    time.Duration
-	RequestTimeout time.Duration
+	EnableTracing     bool
+	IdleTimeout       time.Duration
+	RequestTimeout    time.Duration
+	StreamIdleTimeout time.Duration
 }
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
@@ -118,8 +120,9 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
-				IdleTimeout:    ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
-				RequestTimeout: ptypes.DurationProto(options.RequestTimeout),
+				IdleTimeout:       ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
+				RequestTimeout:    ptypes.DurationProto(options.RequestTimeout),
+				StreamIdleTimeout: durationptoto(options.StreamIdleTimeout),
 
 				// issue #1487 pass through X-Request-Id if provided.
 				PreserveExternalRequestId: true,
@@ -142,6 +145,13 @@ func tvd(d, v time.Duration) time.Duration {
 		return d
 	}
 	return v
+}
+
+func durationptoto(v time.Duration) *duration.Duration {
+	if v > 0 {
+		return ptypes.DurationProto(v)
+	}
+	return nil
 }
 
 // TCPProxyOptions defines optional configrations for tcp proxies
