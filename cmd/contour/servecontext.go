@@ -107,6 +107,9 @@ type serveContext struct {
 	// LeaderElectionConfig can be set in the config file.
 	LeaderElectionConfig `yaml:"leaderelection,omitempty"`
 
+	// DefaultSecret defines's a default secret used for tls termination
+	DefaultSecret resource
+
 	// DelayedCloseTimeout sets the client drain timeout globally.
 	DelayedCloseTimeout time.Duration
 

@@ -123,6 +123,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.EnableTracing)
 	serve.Flag("delayed-close-timeout", "Delayed close timeout for all listeners").DurationVar(&ctx.DelayedCloseTimeout)
+	serve.Flag("default-tls-secret", "default tls certificate secret <namespace>/<name>").SetValue(&ctx.DefaultSecret)
 	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.DrainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
@@ -200,6 +201,10 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				RootNamespaces: ctx.ingressRouteRootNamespaces(),
 				IngressClass:   ctx.ingressClass,
 				FieldLogger:    log.WithField("context", "KubernetesCache"),
+				DefaultSecret: dag.MetaOptions{
+					Name:      ctx.DefaultSecret.Name,
+					Namespace: ctx.DefaultSecret.Namespace,
+				},
 				RouteOptions: dag.RouteOptions{
 					IdleTimeout:     ctx.RouteIdleTimeout,
 					MaxGrpcTimeout:  ctx.RouteMaxGrpcTimeout,

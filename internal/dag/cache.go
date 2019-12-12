@@ -41,6 +41,9 @@ type KubernetesCache struct {
 	// If not set, defaults to DEFAULT_INGRESS_CLASS.
 	IngressClass string
 
+	// DefaultSecret provides a default references for tls configuration
+	DefaultSecret MetaOptions
+
 	// RouteOptions provides options defaults for envoy's routes
 	RouteOptions RouteOptions
 
@@ -69,6 +72,11 @@ func toMeta(obj Object) Meta {
 		name:      m.GetName(),
 		namespace: m.GetNamespace(),
 	}
+}
+
+// MetaOptions holds defaults for Meta.
+type MetaOptions struct {
+	Name, Namespace string
 }
 
 // Insert inserts obj into the KubernetesCache.
