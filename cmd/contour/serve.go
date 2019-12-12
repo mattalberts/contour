@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"strconv"
 	"syscall"
-	"time"
 
 	"k8s.io/client-go/tools/cache"
 
@@ -94,6 +93,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("http-address", "address the metrics http endpoint will bind to").StringVar(&ctx.metricsAddr)
 	serve.Flag("http-port", "port the metrics http endpoint will bind to").IntVar(&ctx.metricsPort)
 
+	serve.Flag("holdoff-delay", "Holdoff notifier delay for all updates").Default("100ms").DurationVar(&ctx.holdoffDelay)
+	serve.Flag("holdoff-max-delay", "Holdoff notifier max delay before forced updates").Default("500ms").DurationVar(&ctx.holdoffMaxDelay)
 	serve.Flag("contour-cafile", "CA bundle file name for serving gRPC with TLS").Envar("CONTOUR_CAFILE").StringVar(&ctx.caFile)
 	serve.Flag("contour-cert-file", "Contour certificate file name for serving gRPC over TLS").Envar("CONTOUR_CERT_FILE").StringVar(&ctx.contourCert)
 	serve.Flag("contour-key-file", "Contour key file name for serving gRPC over TLS").Envar("CONTOUR_KEY_FILE").StringVar(&ctx.contourKey)
@@ -158,8 +159,8 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort),
 			FieldLogger:   log.WithField("context", "CacheHandler"),
 		},
-		HoldoffDelay:    100 * time.Millisecond,
-		HoldoffMaxDelay: 500 * time.Millisecond,
+		HoldoffDelay:    ctx.holdoffDelay,
+		HoldoffMaxDelay: ctx.holdoffMaxDelay,
 		CRDStatus: &k8s.CRDStatus{
 			Client: contourClient,
 		},

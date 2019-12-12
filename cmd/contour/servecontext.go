@@ -44,6 +44,10 @@ type serveContext struct {
 	xdsPort                         int
 	caFile, contourCert, contourKey string
 
+	// contour's xds notification controls
+	holdoffDelay    time.Duration
+	holdoffMaxDelay time.Duration
+
 	// contour's debug handler parameters
 	debugAddr string
 	debugPort int
