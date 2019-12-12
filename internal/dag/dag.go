@@ -125,6 +125,9 @@ type TimeoutPolicy struct {
 
 	// IdleTimeout is the timeout applied to idle connections.
 	IdleTimeout time.Duration
+
+	// MaxGrpcTimeout is the timeout applied to gRPC connections.
+	MaxGrpcTimeout time.Duration
 }
 
 // RetryPolicy defines the retry / number / timeout options

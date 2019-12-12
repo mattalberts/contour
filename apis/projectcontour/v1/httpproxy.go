@@ -219,6 +219,10 @@ type TimeoutPolicy struct {
 	// Timeout after which if there are no active requests, the connection between Envoy and the
 	// backend will be closed.
 	Idle string `json:"idle"`
+
+	// Timeout used to prevent unexpected upstream request timeouts due to potentially long time
+	// gaps between gRPC request and response in gRPC streaming mode.
+	MaxGrpc string `json:"maxGrpc"`
 }
 
 // RetryPolicy defines the attributes associated with retrying policy.

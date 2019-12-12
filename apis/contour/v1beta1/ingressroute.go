@@ -69,6 +69,10 @@ type TimeoutPolicy struct {
 	// If not supplied the timeout duration is undefined.
 	// +optional
 	Request string `json:"request"`
+
+	// MaxGrpc timeout for upstream requests.
+	// +optional
+	MaxGrpc string `json:"maxGrpc"`
 }
 
 // TCPProxy contains the set of services to proxy TCP connections.

@@ -131,6 +131,12 @@ type serveContext struct {
 	// RouteIdleTimeoutLimit sets the upperbound idle timeout allowed per-route
 	RouteIdleTimeoutLimit time.Duration
 
+	// RouteMaxGrpcTimeout sets the default max grpc timeout allowed per-route
+	RouteMaxGrpcTimeout time.Duration
+
+	// RouteMaxGrpcTimeoutLimit sets the upperbound max grpc timeout allowed per-route
+	RouteMaxGrpcTimeoutLimit time.Duration
+
 	// RouteResponseTimeout sets the response timeout per-route
 	RouteResponseTimeout time.Duration
 

@@ -438,6 +438,72 @@ func TestTimeoutPolicy(t *testing.T) {
 				IdleTimeout: 300 * time.Second,
 			},
 		},
+		"defaulted max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{},
+			options: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
+		"defaulted invalid max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				MaxGrpc: "90", // 90 what?
+			},
+			options: RouteOptions{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
+		"max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				MaxGrpc: "900s",
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 900 * time.Second,
+			},
+		},
+		"limit max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				MaxGrpc: "900s",
+			},
+			limits: RouteLimits{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
+		"invalid max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				MaxGrpc: "90", // 90 what?
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: -1,
+			},
+		},
+		"infinite max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				MaxGrpc: "infinite",
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: -1,
+			},
+		},
+		"limit infinite max grpc timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				MaxGrpc: "infinite",
+			},
+			limits: RouteLimits{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				MaxGrpcTimeout: 120 * time.Second,
+			},
+		},
 	}
 
 	for name, tc := range tests {

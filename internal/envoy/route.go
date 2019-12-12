@@ -84,6 +84,7 @@ func RouteRoute(r *dag.Route) *envoy_api_v2_route.Route_Route {
 		RetryPolicy:         retryPolicy(r),
 		Timeout:             responseTimeout(r),
 		IdleTimeout:         idleTimeout(r),
+		MaxGrpcTimeout:      maxGrpcTimeout(r),
 		PrefixRewrite:       r.PrefixRewrite,
 		HashPolicy:          hashPolicy(r),
 		RequestMirrorPolicy: mirrorPolicy(r),
@@ -152,6 +153,13 @@ func idleTimeout(r *dag.Route) *duration.Duration {
 		return nil
 	}
 	return timeout(r.TimeoutPolicy.IdleTimeout)
+}
+
+func maxGrpcTimeout(r *dag.Route) *duration.Duration {
+	if r.TimeoutPolicy == nil {
+		return nil
+	}
+	return timeout(r.TimeoutPolicy.MaxGrpcTimeout)
 }
 
 // timeout interprets a time.Duration with respect to

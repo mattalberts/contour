@@ -185,6 +185,9 @@ spec:
                       idle:
                         description: Idle timeout for upstream requests.
                         type: string
+                      maxGrpc:
+                        description: MaxGrpc timeout for upstream requests.
+                        type: string
                       request:
                         description: Timeout for receiving a response from the server
                           after processing a request from client. If not supplied
@@ -696,6 +699,11 @@ spec:
                         description: Timeout after which if there are no active requests,
                           the connection between Envoy and the backend will be closed.
                         type: string
+                      maxGrpc:
+                        description: Timeout used to prevent unexpected upstream request
+                          timeouts due to potentially long time gaps between gRPC
+                          request and response in gRPC streaming mode.
+                        type: string
                       response:
                         description: Timeout for receiving a response from the server
                           after processing a request from client. If not supplied
@@ -703,6 +711,7 @@ spec:
                         type: string
                     required:
                     - idle
+                    - maxGrpc
                     - response
                     type: object
                 type: object

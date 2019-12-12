@@ -66,6 +66,10 @@ func ingressTimeoutPolicy(ingress *v1beta1.Ingress, options RouteOptions, limits
 		policy.Idle = val
 		n++
 	}
+	if val := compatAnnotation(ingress, "max-grpc-timeout"); len(val) != 0 {
+		policy.MaxGrpc = val
+		n++
+	}
 	if n == 0 {
 		return nil
 	}
@@ -79,6 +83,7 @@ func ingressrouteTimeoutPolicy(tp *ingressroutev1.TimeoutPolicy, options RouteOp
 	return timeoutPolicy(&projcontour.TimeoutPolicy{
 		Response: tp.Request,
 		Idle:     tp.Idle,
+		MaxGrpc:  tp.MaxGrpc,
 	}, options, limits)
 }
 
@@ -92,6 +97,9 @@ func timeoutPolicy(tp *projcontour.TimeoutPolicy, options RouteOptions, limits R
 	}
 	if tp.Idle != "" || options.IdleTimeout > 0 {
 		policy.IdleTimeout = maxtime(parseTimeoutWithDefault(tp.Idle, options.IdleTimeout), limits.IdleTimeout)
+	}
+	if tp.MaxGrpc != "" || options.MaxGrpcTimeout > 0 {
+		policy.MaxGrpcTimeout = maxtime(parseTimeoutWithDefault(tp.MaxGrpc, options.MaxGrpcTimeout), limits.MaxGrpcTimeout)
 	}
 	return policy
 }

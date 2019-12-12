@@ -299,6 +299,38 @@ func TestRouteRoute(t *testing.T) {
 				},
 			},
 		},
+		"max grpc timeout 10m": {
+			route: &dag.Route{
+				TimeoutPolicy: &dag.TimeoutPolicy{
+					MaxGrpcTimeout: 10 * time.Minute,
+				},
+				Clusters: []*dag.Cluster{c1},
+			},
+			want: &envoy_api_v2_route.Route_Route{
+				Route: &envoy_api_v2_route.RouteAction{
+					ClusterSpecifier: &envoy_api_v2_route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					MaxGrpcTimeout: protobuf.Duration(600 * time.Second),
+				},
+			},
+		},
+		"max gprc timeout infinity": {
+			route: &dag.Route{
+				TimeoutPolicy: &dag.TimeoutPolicy{
+					MaxGrpcTimeout: -1,
+				},
+				Clusters: []*dag.Cluster{c1},
+			},
+			want: &envoy_api_v2_route.Route_Route{
+				Route: &envoy_api_v2_route.RouteAction{
+					ClusterSpecifier: &envoy_api_v2_route.RouteAction_Cluster{
+						Cluster: "default/kuard/8080/da39a3ee5e",
+					},
+					MaxGrpcTimeout: protobuf.Duration(0),
+				},
+			},
+		},
 		"single service w/ session affinity": {
 			route: &dag.Route{
 				Clusters: []*dag.Cluster{c2},
