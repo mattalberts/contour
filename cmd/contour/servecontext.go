@@ -125,6 +125,12 @@ type serveContext struct {
 	// ProxyIdleTimeout sets the client idle timeout globally for tcp proxy.
 	ProxyIdleTimeout time.Duration
 
+	// RouteIdleTimeout sets the idle timeout per-route
+	RouteIdleTimeout time.Duration
+
+	// RouteIdleTimeoutLimit sets the upperbound idle timeout allowed per-route
+	RouteIdleTimeoutLimit time.Duration
+
 	// RouteResponseTimeout sets the response timeout per-route
 	RouteResponseTimeout time.Duration
 

@@ -182,6 +182,9 @@ spec:
                   timeoutPolicy:
                     description: The timeout policy for this route
                     properties:
+                      idle:
+                        description: Idle timeout for upstream requests.
+                        type: string
                       request:
                         description: Timeout for receiving a response from the server
                           after processing a request from client. If not supplied

@@ -128,6 +128,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.StreamIdleTimeout)
 	serve.Flag("proxy-idle-timeout", "TCP proxy idle timeout for all listeners").DurationVar(&ctx.ProxyIdleTimeout)
+	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeout)
+	serve.Flag("route-idle-timeout-limit", "Upperbound idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeoutLimit)
 	serve.Flag("route-response-timeout", "Request timeout for all routes").DurationVar(&ctx.RouteResponseTimeout)
 	serve.Flag("route-response-timeout-limit", "Upperbound request timeout for all routes").DurationVar(&ctx.RouteResponseTimeoutLimit)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
@@ -197,9 +199,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				IngressClass:   ctx.ingressClass,
 				FieldLogger:    log.WithField("context", "KubernetesCache"),
 				RouteOptions: dag.RouteOptions{
+					IdleTimeout:     ctx.RouteIdleTimeout,
 					ResponseTimeout: ctx.RouteResponseTimeout,
 				},
 				RouteLimits: dag.RouteLimits{
+					IdleTimeout:     ctx.RouteIdleTimeoutLimit,
 					ResponseTimeout: ctx.RouteResponseTimeoutLimit,
 				},
 			},

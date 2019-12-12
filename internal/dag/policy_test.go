@@ -368,12 +368,74 @@ func TestTimeoutPolicy(t *testing.T) {
 				ResponseTimeout: 120 * time.Second,
 			},
 		},
-		"idle timeout": {
+		"defaulted idle timeout": {
+			tp: &projcontour.TimeoutPolicy{},
+			options: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 120 * time.Second,
+			},
+		},
+		"defaulted invalid idle timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Idle: "900", // 900 what?
+			},
+			options: RouteOptions{
+				IdleTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 120 * time.Second,
+			},
+		},
+		"valid idle timeout": {
 			tp: &projcontour.TimeoutPolicy{
 				Idle: "900s",
 			},
 			want: &TimeoutPolicy{
 				IdleTimeout: 900 * time.Second,
+			},
+		},
+		"limit idle timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Idle: "900s",
+			},
+			limits: RouteLimits{
+				IdleTimeout: 300 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 300 * time.Second,
+			},
+		},
+		"invalid idle timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Idle: "900", // 90 what?
+			},
+			want: &TimeoutPolicy{
+				// the documentation for an invalid timeout says the duration will
+				// be undefined. In practice we take the spec from the
+				// contour.heptio.com/request-timeout annotation, which is defined
+				// to choose infinite when its valid cannot be parsed.
+				IdleTimeout: -1,
+			},
+		},
+		"infinite idle timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Idle: "infinite",
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: -1,
+			},
+		},
+		"limit idle response timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Idle: "infinite",
+			},
+			limits: RouteLimits{
+				IdleTimeout: 300 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				IdleTimeout: 300 * time.Second,
 			},
 		},
 	}

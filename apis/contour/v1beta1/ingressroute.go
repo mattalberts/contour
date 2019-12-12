@@ -61,6 +61,10 @@ type Route struct {
 
 // TimeoutPolicy define the attributes associated with timeout
 type TimeoutPolicy struct {
+	// Idle timeout for upstream requests.
+	// +optional
+	Idle string `json:"idle"`
+
 	// Timeout for receiving a response from the server after processing a request from client.
 	// If not supplied the timeout duration is undefined.
 	// +optional

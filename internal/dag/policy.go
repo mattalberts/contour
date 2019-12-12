@@ -62,6 +62,10 @@ func ingressTimeoutPolicy(ingress *v1beta1.Ingress, options RouteOptions, limits
 		policy.Response = val
 		n++
 	}
+	if val := compatAnnotation(ingress, "idle-timeout"); len(val) != 0 {
+		policy.Idle = val
+		n++
+	}
 	if n == 0 {
 		return nil
 	}
@@ -74,6 +78,7 @@ func ingressrouteTimeoutPolicy(tp *ingressroutev1.TimeoutPolicy, options RouteOp
 	}
 	return timeoutPolicy(&projcontour.TimeoutPolicy{
 		Response: tp.Request,
+		Idle:     tp.Idle,
 	}, options, limits)
 }
 
@@ -85,8 +90,8 @@ func timeoutPolicy(tp *projcontour.TimeoutPolicy, options RouteOptions, limits R
 	if tp.Response != "" || options.ResponseTimeout > 0 {
 		policy.ResponseTimeout = maxtime(parseTimeoutWithDefault(tp.Response, options.ResponseTimeout), limits.ResponseTimeout)
 	}
-	if tp.Idle != "" {
-		policy.IdleTimeout = parseTimeout(tp.Idle)
+	if tp.Idle != "" || options.IdleTimeout > 0 {
+		policy.IdleTimeout = maxtime(parseTimeoutWithDefault(tp.Idle, options.IdleTimeout), limits.IdleTimeout)
 	}
 	return policy
 }
