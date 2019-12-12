@@ -115,6 +115,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("accesslog-format", "Format for Envoy access logs").StringVar(&ctx.AccessLogFormat)
 	serve.Flag("disable-leader-election", "Disable leader election mechanism").BoolVar(&ctx.DisableLeaderElection)
+	serve.Flag("leader-election-namespace", "The leader election namespace").Default("projectcontour").StringVar(&ctx.Namespace)
 
 	serve.Flag("use-extensions-v1beta1-ingress", "Subscribe to the deprecated extensions/v1beta1.Ingress type").BoolVar(&ctx.UseExtensionsV1beta1Ingress)
 
