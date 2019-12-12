@@ -298,12 +298,43 @@ func TestTimeoutPolicy(t *testing.T) {
 				ResponseTimeout: 0 * time.Second,
 			},
 		},
+		"defaulted response timeout": {
+			tp: &projcontour.TimeoutPolicy{},
+			options: RouteOptions{
+				ResponseTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				ResponseTimeout: 120 * time.Second,
+			},
+		},
+		"defaulted invalid response timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Response: "90", // 90 what?
+			},
+			options: RouteOptions{
+				ResponseTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				ResponseTimeout: 120 * time.Second,
+			},
+		},
 		"valid response timeout": {
 			tp: &projcontour.TimeoutPolicy{
 				Response: "1m30s",
 			},
 			want: &TimeoutPolicy{
 				ResponseTimeout: 90 * time.Second,
+			},
+		},
+		"limit response timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Response: "1m30s",
+			},
+			limits: RouteLimits{
+				ResponseTimeout: 30 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				ResponseTimeout: 30 * time.Second,
 			},
 		},
 		"invalid response timeout": {
@@ -324,6 +355,17 @@ func TestTimeoutPolicy(t *testing.T) {
 			},
 			want: &TimeoutPolicy{
 				ResponseTimeout: -1,
+			},
+		},
+		"limit infinite response timeout": {
+			tp: &projcontour.TimeoutPolicy{
+				Response: "infinite",
+			},
+			limits: RouteLimits{
+				ResponseTimeout: 120 * time.Second,
+			},
+			want: &TimeoutPolicy{
+				ResponseTimeout: 120 * time.Second,
 			},
 		},
 		"idle timeout": {
@@ -417,6 +459,46 @@ func TestParseTimeout(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := parseTimeout(tc.duration)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestParseTimeoutWithDefault(t *testing.T) {
+	for name, tc := range map[string]struct {
+		duration string
+		alt      time.Duration
+		want     time.Duration
+	}{
+		"empty": {
+			duration: "",
+			want:     0,
+		},
+		"empty with non-zero default": {
+			duration: "",
+			alt:      5 * time.Second,
+			want:     5 * time.Second,
+		},
+		"infinity": {
+			duration: "infinity",
+			want:     -1,
+		},
+		"10 seconds": {
+			duration: "10s",
+			want:     10 * time.Second,
+		},
+		"invalid": {
+			duration: "10", // 10 what?
+			want:     -1,
+		},
+		"invalid with non-zero default": {
+			duration: "10", // 10 what?
+			alt:      5 * time.Second,
+			want:     5 * time.Second,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := parseTimeoutWithDefault(tc.duration, tc.alt)
 			assert.Equal(t, tc.want, got)
 		})
 	}

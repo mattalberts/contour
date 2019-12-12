@@ -125,6 +125,12 @@ type serveContext struct {
 	// ProxyIdleTimeout sets the client idle timeout globally for tcp proxy.
 	ProxyIdleTimeout time.Duration
 
+	// RouteResponseTimeout sets the response timeout per-route
+	RouteResponseTimeout time.Duration
+
+	// RouteResponseTimeoutLimit sets the upperbound response timeout allowed per-route
+	RouteResponseTimeoutLimit time.Duration
+
 	// Should Contour fall back to registering an informer for the deprecated
 	// extensions/v1beta1.Ingress type.
 	// By default this value is false, meaning Contour will register an informer for

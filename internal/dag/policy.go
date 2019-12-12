@@ -53,43 +53,42 @@ func ingressRetryPolicy(ingress *v1beta1.Ingress) *RetryPolicy {
 }
 
 func ingressTimeoutPolicy(ingress *v1beta1.Ingress, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
-	response := compatAnnotation(ingress, "response-timeout")
-	if len(response) == 0 {
-		// Note: due to a misunderstanding the name of the annotation is
-		// request timeout, but it is actually applied as a timeout on
-		// the response body.
-		response = compatAnnotation(ingress, "request-timeout")
-		if len(response) == 0 {
-			return nil
-		}
+	n, policy := 0, &projcontour.TimeoutPolicy{}
+	if val := compatAnnotation(ingress, "request-timeout"); len(val) != 0 {
+		policy.Response = val
+		n++
 	}
-	// if the request timeout annotation is present on this ingress
-	// construct and use the ingressroute timeout policy logic.
-	return timeoutPolicy(&projcontour.TimeoutPolicy{
-		Response: response,
-	}, options, limits)
+	if val := compatAnnotation(ingress, "response-timeout"); len(val) != 0 {
+		policy.Response = val
+		n++
+	}
+	if n == 0 {
+		return nil
+	}
+	return timeoutPolicy(policy, options, limits)
 }
 
 func ingressrouteTimeoutPolicy(tp *ingressroutev1.TimeoutPolicy, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}
-	return &TimeoutPolicy{
-		// due to a misunderstanding the name of the field ingressroute is
-		// Request, however the timeout applies to the response resulting from
-		// a request.
-		ResponseTimeout: parseTimeout(tp.Request),
-	}
+	return timeoutPolicy(&projcontour.TimeoutPolicy{
+		Response: tp.Request,
+	}, options, limits)
 }
 
 func timeoutPolicy(tp *projcontour.TimeoutPolicy, options RouteOptions, limits RouteLimits) *TimeoutPolicy {
 	if tp == nil {
 		return nil
 	}
-	return &TimeoutPolicy{
-		ResponseTimeout: parseTimeout(tp.Response),
-		IdleTimeout:     parseTimeout(tp.Idle),
+	policy := &TimeoutPolicy{}
+	if tp.Response != "" || options.ResponseTimeout > 0 {
+		policy.ResponseTimeout = maxtime(parseTimeoutWithDefault(tp.Response, options.ResponseTimeout), limits.ResponseTimeout)
 	}
+	if tp.Idle != "" {
+		policy.IdleTimeout = parseTimeout(tp.Idle)
+	}
+	return policy
 }
 func ingressrouteHealthCheckPolicy(hc *ingressroutev1.HealthCheck) *HealthCheckPolicy {
 	if hc == nil {
@@ -161,6 +160,46 @@ func parseTimeout(timeout string) time.Duration {
 		return -1
 	}
 	return d
+}
+
+func parseTimeoutWithDefault(timeout string, val time.Duration) time.Duration {
+	if timeout == "" {
+		// Blank is interpreted as no timeout specified, use envoy defaults
+		// By default envoy applies a 15 second timeout to all backend requests.
+		// The explicit value 0 turns off the timeout, implying "never time out"
+		// https://www.envoyproxy.io/docs/envoy/v1.5.0/api-v2/rds.proto#routeaction
+		return val
+	}
+
+	// Interpret "infinity" explicitly as an infinite timeout, which envoy config
+	// expects as a timeout of 0. This could be specified with the duration string
+	// "0s" but want to give an explicit out for operators.
+	if timeout == "infinity" {
+		return -1
+	}
+
+	d, err := time.ParseDuration(timeout)
+	if err != nil {
+		// TODO(cmalonty) plumb a logger in here so we can log this error.
+		// Assuming infinite duration is going to surprise people less for
+		// a not-parseable duration than a implicit 15 second one.
+		if val > 0 {
+			return val
+		}
+		return -1
+	}
+	return d
+}
+
+func maxtime(val, max time.Duration) time.Duration {
+	switch {
+	case val == 0, max <= 0:
+		return val
+	case val > max, val < 0:
+		return max
+	default:
+		return val
+	}
 }
 
 func max(a, b uint32) uint32 {
