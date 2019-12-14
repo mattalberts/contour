@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/projectcontour/contour/internal/dag"
 	"github.com/projectcontour/contour/internal/protobuf"
 )
@@ -47,12 +48,24 @@ func ProxyProtocol() *envoy_api_v2_listener.ListenerFilter {
 	}
 }
 
+// ListenerOptions defines optional configrations for listeners
+type ListenerOptions struct {
+	PerConnectionBufferLimitBytes    uint32
+	ListenerFiltersTimeout           time.Duration
+	ContinueOnListenerFiltersTimeout bool
+	TCPFastOpenQueueLength           uint32
+}
+
 // Listener returns a new v2.Listener for the supplied address, port, and filters.
-func Listener(name, address string, port int, lf []*envoy_api_v2_listener.ListenerFilter, filters ...*envoy_api_v2_listener.Filter) *v2.Listener {
+func Listener(name, address string, port int, options ListenerOptions, lf []*envoy_api_v2_listener.ListenerFilter, filters ...*envoy_api_v2_listener.Filter) *v2.Listener {
 	l := &v2.Listener{
-		Name:            name,
-		Address:         SocketAddress(address, port),
-		ListenerFilters: lf,
+		Name:                             name,
+		Address:                          SocketAddress(address, port),
+		PerConnectionBufferLimitBytes:    uint32ptoto(options.PerConnectionBufferLimitBytes),
+		ListenerFilters:                  lf,
+		ListenerFiltersTimeout:           durationptoto(options.ListenerFiltersTimeout),
+		ContinueOnListenerFiltersTimeout: options.ContinueOnListenerFiltersTimeout,
+		TcpFastOpenQueueLength:           uint32ptoto(options.TCPFastOpenQueueLength),
 	}
 	if len(filters) > 0 {
 		l.FilterChains = append(
@@ -63,6 +76,13 @@ func Listener(name, address string, port int, lf []*envoy_api_v2_listener.Listen
 		)
 	}
 	return l
+}
+
+func uint32ptoto(v uint32) *wrappers.UInt32Value {
+	if v > 0 {
+		return protobuf.UInt32(v)
+	}
+	return nil
 }
 
 // HTTPConnectionOptions defines optional configrations for http conntections

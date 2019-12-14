@@ -50,6 +50,7 @@ func Cluster(c *dag.Cluster) *v2.Cluster {
 	cluster.AltStatName = altStatName(service)
 	cluster.LbPolicy = lbPolicy(c.LoadBalancerPolicy)
 	cluster.HealthChecks = edshealthcheck(c)
+	cluster.PerConnectionBufferLimitBytes = uint32ptoto(service.PerConnectionBufferLimitBytes)
 
 	switch len(service.ExternalName) {
 	case 0:

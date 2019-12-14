@@ -1929,6 +1929,25 @@ func TestDAGInsert(t *testing.T) {
 		},
 	}
 
+	// s1c per-connection buffer
+	s1c := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kuard",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"projectcontour.io/per-connection-buffer-limit-bytes": "65536",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{{
+				Name:       "http",
+				Protocol:   "TCP",
+				Port:       8080,
+				TargetPort: intstr.FromInt(8080),
+			}},
+		},
+	}
+
 	// s2 is like s1 but with a different name
 	s2 := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -4907,6 +4926,58 @@ func TestDAGInsert(t *testing.T) {
 								MaxPendingRequests: 256,
 								MaxRequests:        64,
 								MaxRetries:         3,
+							}),
+						),
+					),
+				},
+			),
+		},
+		"insert ingress then service w/ defaulted per-connecction buffer annotations": {
+			kc: &KubernetesCache{
+				ServiceOptions: ServiceOptions{
+					PerConnectionBufferLimitBytes: 32768, // 32KiB
+				},
+			},
+			objs: []interface{}{
+				i1,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*",
+							prefixroute("/", &Service{
+								Name:                          s1.Name,
+								Namespace:                     s1.Namespace,
+								ServicePort:                   &s1.Spec.Ports[0],
+								PerConnectionBufferLimitBytes: 32768,
+							}),
+						),
+					),
+				},
+			),
+		},
+		"insert ingress then service w/ limited per-connecction buffer annotations": {
+			kc: &KubernetesCache{
+				ServiceLimits: ServiceLimits{
+					PerConnectionBufferLimitBytes: 32768, // 32KiB
+				},
+			},
+			objs: []interface{}{
+				i1,
+				s1c,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*",
+							prefixroute("/", &Service{
+								Name:                          s1b.Name,
+								Namespace:                     s1b.Namespace,
+								ServicePort:                   &s1b.Spec.Ports[0],
+								PerConnectionBufferLimitBytes: 32768,
 							}),
 						),
 					),

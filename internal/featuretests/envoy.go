@@ -191,5 +191,5 @@ func tcpproxy(t *testing.T, statPrefix, cluster string) *envoy_api_v2_listener.F
 }
 
 func staticListener() *v2.Listener {
-	return envoy.StatsListener("0.0.0.0", 8002, envoy.HTTPConnectionOptions{})
+	return envoy.StatsListener("0.0.0.0", 8002, envoy.StatsOptions{})
 }

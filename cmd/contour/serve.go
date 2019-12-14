@@ -128,6 +128,7 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.StreamIdleTimeout)
+	serve.Flag("per-connection-buffer-limit-bytes", "Number of bytes per connection all listeners").Uint32Var(&ctx.PerConnectionBufferLimitBytes)
 	serve.Flag("proxy-idle-timeout", "TCP proxy idle timeout for all listeners").DurationVar(&ctx.ProxyIdleTimeout)
 	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeout)
 	serve.Flag("route-idle-timeout-limit", "Upperbound idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeoutLimit)
@@ -143,6 +144,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("service-max-requests-limit", "Upperbound max requests for all services").Uint32Var(&ctx.ServiceMaxRequestsLimit)
 	serve.Flag("service-max-retries", "Max retries for all services").Uint32Var(&ctx.ServiceMaxRetries)
 	serve.Flag("service-max-retries-limit", "Upperbound max retries for all services").Uint32Var(&ctx.ServiceMaxRetriesLimit)
+	serve.Flag("service-per-connection-buffer-limit-bytes", "Number of bytes per connection for all services").Uint32Var(&ctx.ServicePerConnectionBufferLimitBytes)
+	serve.Flag("service-per-connection-buffer-limit-bytes-limit", "Upperbound bytes per connection for all services").Uint32Var(&ctx.ServicePerConnectionBufferLimitBytesLimit)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 	return serve, ctx
 }
@@ -179,6 +182,9 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				AccessLogType:          ctx.AccessLogFormat,
 				AccessLogFields:        ctx.AccessLogFields,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
+				ListenerOptions: envoy.ListenerOptions{
+					PerConnectionBufferLimitBytes: ctx.PerConnectionBufferLimitBytes,
+				},
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 					EnableTracing:     ctx.EnableTracing,
 					DrainTimeout:      safetime(ctx.DrainTimeout),
@@ -190,12 +196,17 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					IdleTimeout: safetime(ctx.ProxyIdleTimeout),
 				},
 			},
-			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.HTTPConnectionOptions{
-				EnableTracing:     ctx.EnableTracing,
-				DrainTimeout:      safetime(ctx.DrainTimeout),
-				IdleTimeout:       safetime(ctx.IdleTimeout),
-				RequestTimeout:    safetime(ctx.RequestTimeout),
-				StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
+			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.StatsOptions{
+				ListenerOptions: envoy.ListenerOptions{
+					PerConnectionBufferLimitBytes: ctx.PerConnectionBufferLimitBytes,
+				},
+				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+					EnableTracing:     ctx.EnableTracing,
+					DrainTimeout:      safetime(ctx.DrainTimeout),
+					IdleTimeout:       safetime(ctx.IdleTimeout),
+					RequestTimeout:    safetime(ctx.RequestTimeout),
+					StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
+				},
 			}),
 			FieldLogger: log.WithField("context", "CacheHandler"),
 		},
@@ -224,16 +235,18 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					ResponseTimeout: ctx.RouteResponseTimeoutLimit,
 				},
 				ServiceOptions: dag.ServiceOptions{
-					MaxConnections:     ctx.ServiceMaxConnections,
-					MaxPendingRequests: ctx.ServiceMaxPendingRequests,
-					MaxRequests:        ctx.ServiceMaxRequests,
-					MaxRetries:         ctx.ServiceMaxRetries,
+					MaxConnections:                ctx.ServiceMaxConnections,
+					MaxPendingRequests:            ctx.ServiceMaxPendingRequests,
+					MaxRequests:                   ctx.ServiceMaxRequests,
+					MaxRetries:                    ctx.ServiceMaxRetries,
+					PerConnectionBufferLimitBytes: ctx.ServicePerConnectionBufferLimitBytes,
 				},
 				ServiceLimits: dag.ServiceLimits{
-					MaxConnections:     ctx.ServiceMaxConnectionsLimit,
-					MaxPendingRequests: ctx.ServiceMaxPendingRequestsLimit,
-					MaxRequests:        ctx.ServiceMaxRequestsLimit,
-					MaxRetries:         ctx.ServiceMaxRetriesLimit,
+					MaxConnections:                ctx.ServiceMaxConnectionsLimit,
+					MaxPendingRequests:            ctx.ServiceMaxPendingRequestsLimit,
+					MaxRequests:                   ctx.ServiceMaxRequestsLimit,
+					MaxRetries:                    ctx.ServiceMaxRetriesLimit,
+					PerConnectionBufferLimitBytes: ctx.ServicePerConnectionBufferLimitBytesLimit,
 				},
 			},
 			DisablePermitInsecure: ctx.DisablePermitInsecure,

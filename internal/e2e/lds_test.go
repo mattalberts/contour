@@ -1398,5 +1398,5 @@ func filterchaintls(domain string, secret *v1.Secret, filter *envoy_api_v2_liste
 }
 
 func staticListener() *v2.Listener {
-	return envoy.StatsListener(statsAddress, statsPort, envoy.HTTPConnectionOptions{})
+	return envoy.StatsListener(statsAddress, statsPort, envoy.StatsOptions{})
 }

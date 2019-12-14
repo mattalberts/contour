@@ -71,7 +71,7 @@ func setup(t *testing.T, opts ...func(*contour.EventHandler)) (cache.ResourceEve
 	r := prometheus.NewRegistry()
 	ch := &contour.CacheHandler{
 		Metrics:       metrics.NewMetrics(r),
-		ListenerCache: contour.NewListenerCache(statsAddress, statsPort, envoy.HTTPConnectionOptions{}),
+		ListenerCache: contour.NewListenerCache(statsAddress, statsPort, envoy.StatsOptions{}),
 		FieldLogger:   log,
 	}
 

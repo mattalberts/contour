@@ -302,6 +302,9 @@ type Service struct {
 	// Envoy will allow to the upstream cluster.
 	MaxRetries uint32
 
+	// PerConnectionBufferLimitBytes is the per-connection buffer limit
+	PerConnectionBufferLimitBytes uint32
+
 	// ExternalName is an optional field referencing a dns entry for Service type "ExternalName"
 	ExternalName string
 }

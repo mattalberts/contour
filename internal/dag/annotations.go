@@ -186,3 +186,7 @@ func maxRequests(o Object, options ServiceOptions, limits ServiceLimits) uint32 
 func maxRetries(o Object, options ServiceOptions, limits ServiceLimits) uint32 {
 	return limitUInt32(parseUInt32WithDefault(compatAnnotation(o, "max-retries"), options.MaxRetries), limits.MaxRetries)
 }
+
+func perConnectionBufferLimitBytes(o Object, options ServiceOptions, limits ServiceLimits) uint32 {
+	return limitUInt32(parseUInt32WithDefault(compatAnnotation(o, "per-connection-buffer-limit-bytes"), options.PerConnectionBufferLimitBytes), limits.PerConnectionBufferLimitBytes)
+}

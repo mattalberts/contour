@@ -84,6 +84,9 @@ type ListenerVisitorConfig struct {
 	// Defaults to a particular set of fields.
 	AccessLogFields []string
 
+	// ListenerOptions default options for listenrs.
+	ListenerOptions envoy.ListenerOptions
+
 	// HTTPConnectionOptions default options for HTTPConnectionManagers.
 	HTTPConnectionOptions envoy.HTTPConnectionOptions
 
@@ -199,7 +202,7 @@ type ListenerCache struct {
 }
 
 // NewListenerCache returns an instance of a ListenerCache
-func NewListenerCache(address string, port int, options envoy.HTTPConnectionOptions) ListenerCache {
+func NewListenerCache(address string, port int, options envoy.StatsOptions) ListenerCache {
 	stats := envoy.StatsListener(address, port, options)
 	return ListenerCache{
 		staticValues: map[string]*v2.Listener{
@@ -281,6 +284,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 			ENVOY_HTTPS_LISTENER: envoy.Listener(
 				ENVOY_HTTPS_LISTENER,
 				lvc.httpsAddress(), lvc.httpsPort(),
+				lvc.ListenerOptions,
 				secureProxyProtocol(lvc.UseProxyProto),
 			),
 		},
@@ -292,6 +296,7 @@ func visitListeners(root dag.Vertex, lvc *ListenerVisitorConfig) map[string]*v2.
 		lv.listeners[ENVOY_HTTP_LISTENER] = envoy.Listener(
 			ENVOY_HTTP_LISTENER,
 			lvc.httpAddress(), lvc.httpPort(),
+			lvc.ListenerOptions,
 			proxyProtocol(lvc.UseProxyProto),
 			envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, lvc.newInsecureAccessLog(), lvc.HTTPConnectionOptions),
 		)

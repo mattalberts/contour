@@ -32,18 +32,24 @@ func TestStatsListener(t *testing.T) {
 	tests := map[string]struct {
 		address string
 		port    int
-		options HTTPConnectionOptions
+		options StatsOptions
 		want    *v2.Listener
 	}{
 		"stats-health": {
 			address: "127.0.0.127",
 			port:    8123,
-			options: HTTPConnectionOptions{
-				RequestTimeout: 30 * time.Second,
+			options: StatsOptions{
+				ListenerOptions: ListenerOptions{
+					PerConnectionBufferLimitBytes: 32768, // 32KiB
+				},
+				HTTPConnectionOptions: HTTPConnectionOptions{
+					RequestTimeout: 30 * time.Second,
+				},
 			},
 			want: &v2.Listener{
-				Name:    "stats-health",
-				Address: SocketAddress("127.0.0.127", 8123),
+				Name:                          "stats-health",
+				Address:                       SocketAddress("127.0.0.127", 8123),
+				PerConnectionBufferLimitBytes: protobuf.UInt32(32768),
 				FilterChains: FilterChains(
 					&envoy_api_v2_listener.Filter{
 						Name: wellknown.HTTPConnectionManager,

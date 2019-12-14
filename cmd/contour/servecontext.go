@@ -125,6 +125,9 @@ type serveContext struct {
 	// StreamIdleTimeout the client stream idle timeout globally for http.
 	StreamIdleTimeout time.Duration `yaml:"stream-idle-timeout,omitempty"`
 
+	// PerConnectionBufferLimitBytes the client connection byte limit.
+	PerConnectionBufferLimitBytes uint32 `yaml:"per-connection-buffer-limit-bytes,omitempty"`
+
 	// ProxyIdleTimeout sets the client idle timeout globally for tcp proxy.
 	ProxyIdleTimeout time.Duration `yaml:"proxy-idle-timeout,omitempty"`
 
@@ -169,6 +172,12 @@ type serveContext struct {
 
 	// ServiceMaxRetriesLimit sets the upperbound max retries allowed per-service
 	ServiceMaxRetriesLimit uint32 `yaml:"service-max-retries-limit,omitempty"`
+
+	// ServicePerConnectionBufferLimitBytes the per-connection byte limit.
+	ServicePerConnectionBufferLimitBytes uint32 `yaml:"service-per-connection-buffer-limit-bytes,omitempty"`
+
+	// ServicePerConnectionBufferLimitBytesLimit sets the upperbound per-connection byte limit.
+	ServicePerConnectionBufferLimitBytesLimit uint32 `yaml:"service-per-connection-buffer-limit-bytes-limit,omitempty"`
 
 	// Should Contour fall back to registering an informer for the deprecated
 	// extensions/v1beta1.Ingress type.

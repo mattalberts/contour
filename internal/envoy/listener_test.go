@@ -37,6 +37,7 @@ func TestListener(t *testing.T) {
 	tests := map[string]struct {
 		name, address string
 		port          int
+		options       ListenerOptions
 		lf            []*envoy_api_v2_listener.ListenerFilter
 		f             []*envoy_api_v2_listener.Filter
 		want          *v2.Listener
@@ -77,6 +78,25 @@ func TestListener(t *testing.T) {
 				),
 			},
 		},
+		"insecure listener w/ buffer limit": {
+			name:    "http",
+			address: "0.0.0.0",
+			port:    9000,
+			options: ListenerOptions{
+				PerConnectionBufferLimitBytes: 32768, // 32KiB
+			},
+			f: []*envoy_api_v2_listener.Filter{
+				HTTPConnectionManager("http", FileAccessLogEnvoy("/dev/null"), HTTPConnectionOptions{}),
+			},
+			want: &v2.Listener{
+				Name:                          "http",
+				Address:                       SocketAddress("0.0.0.0", 9000),
+				PerConnectionBufferLimitBytes: protobuf.UInt32(32768),
+				FilterChains: FilterChains(
+					HTTPConnectionManager("http", FileAccessLogEnvoy("/dev/null"), HTTPConnectionOptions{}),
+				),
+			},
+		},
 		"secure listener": {
 			name:    "https",
 			address: "0.0.0.0",
@@ -113,7 +133,7 @@ func TestListener(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := Listener(tc.name, tc.address, tc.port, tc.lf, tc.f...)
+			got := Listener(tc.name, tc.address, tc.port, tc.options, tc.lf, tc.f...)
 			assert.Equal(t, tc.want, got)
 		})
 	}

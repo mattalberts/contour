@@ -26,12 +26,22 @@ import (
 	"github.com/projectcontour/contour/internal/protobuf"
 )
 
+// StatsOptions defines options for the stats listener
+type StatsOptions struct {
+	ListenerOptions
+	HTTPConnectionOptions
+}
+
 // StatsListener returns a *v2.Listener configured to serve prometheus
 // metrics on /stats.
-func StatsListener(address string, port int, options HTTPConnectionOptions) *v2.Listener {
+func StatsListener(address string, port int, options StatsOptions) *v2.Listener {
 	return &v2.Listener{
-		Name:    "stats-health",
-		Address: SocketAddress(address, port),
+		Name:                             "stats-health",
+		Address:                          SocketAddress(address, port),
+		PerConnectionBufferLimitBytes:    uint32ptoto(options.PerConnectionBufferLimitBytes),
+		ListenerFiltersTimeout:           durationptoto(options.ListenerFiltersTimeout),
+		ContinueOnListenerFiltersTimeout: options.ContinueOnListenerFiltersTimeout,
+		TcpFastOpenQueueLength:           uint32ptoto(options.TCPFastOpenQueueLength),
 		FilterChains: FilterChains(
 			&envoy_api_v2_listener.Filter{
 				Name: wellknown.HTTPConnectionManager,

@@ -120,12 +120,13 @@ func (b *Builder) addService(svc *v1.Service, port *v1.ServicePort, options Serv
 		Namespace:   svc.Namespace,
 		ServicePort: port,
 
-		Protocol:           upstreamProtocol(svc, port),
-		MaxConnections:     maxConnections(svc, options, limits),
-		MaxPendingRequests: maxPendingRequests(svc, options, limits),
-		MaxRequests:        maxRequests(svc, options, limits),
-		MaxRetries:         maxRetries(svc, options, limits),
-		ExternalName:       externalName(svc),
+		Protocol:                      upstreamProtocol(svc, port),
+		MaxConnections:                maxConnections(svc, options, limits),
+		MaxPendingRequests:            maxPendingRequests(svc, options, limits),
+		MaxRequests:                   maxRequests(svc, options, limits),
+		MaxRetries:                    maxRetries(svc, options, limits),
+		PerConnectionBufferLimitBytes: perConnectionBufferLimitBytes(svc, options, limits),
+		ExternalName:                  externalName(svc),
 	}
 	b.services[s.toMeta()] = s
 	return s
