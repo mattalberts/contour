@@ -1948,6 +1948,25 @@ func TestDAGInsert(t *testing.T) {
 		},
 	}
 
+	// s1d connect-timeout
+	s1d := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kuard",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"projectcontour.io/connect-timeout": "600s",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{{
+				Name:       "http",
+				Protocol:   "TCP",
+				Port:       8080,
+				TargetPort: intstr.FromInt(8080),
+			}},
+		},
+	}
+
 	// s2 is like s1 but with a different name
 	s2 := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -4838,6 +4857,58 @@ func TestDAGInsert(t *testing.T) {
 								Namespace:   s3c.Namespace,
 								ServicePort: &s3c.Spec.Ports[0],
 								Protocol:    "tls",
+							}),
+						),
+					),
+				},
+			),
+		},
+		"insert ingress then service w/ defaulted connect-timeout annotation": {
+			kc: &KubernetesCache{
+				ServiceOptions: ServiceOptions{
+					ConnectTimeout: 15 * time.Second,
+				},
+			},
+			objs: []interface{}{
+				i1,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*",
+							prefixroute("/", &Service{
+								Name:           s1.Name,
+								Namespace:      s1.Namespace,
+								ServicePort:    &s1.Spec.Ports[0],
+								ConnectTimeout: 15 * time.Second,
+							}),
+						),
+					),
+				},
+			),
+		},
+		"insert ingress then service w/ limited connect-timeout annotation": {
+			kc: &KubernetesCache{
+				ServiceLimits: ServiceLimits{
+					ConnectTimeout: 15 * time.Second,
+				},
+			},
+			objs: []interface{}{
+				i1,
+				s1d,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*",
+							prefixroute("/", &Service{
+								Name:           s1b.Name,
+								Namespace:      s1b.Namespace,
+								ServicePort:    &s1b.Spec.Ports[0],
+								ConnectTimeout: 15 * time.Second,
 							}),
 						),
 					),

@@ -140,6 +140,8 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("route-response-timeout-limit", "Upperbound request timeout for all routes").DurationVar(&ctx.RouteResponseTimeoutLimit)
 	serve.Flag("route-per-try-timeout", "Per-try timeout for all routes").DurationVar(&ctx.RoutePerTryTimeout)
 	serve.Flag("route-per-try-timeout-limit", "Upperbound Per-try timeout for all routes").DurationVar(&ctx.RoutePerTryTimeoutLimit)
+	serve.Flag("service-connect-timeout", "Connect timeout for all services").DurationVar(&ctx.ServiceConnectTimeout)
+	serve.Flag("service-connect-timeout-limit", "Upperbound connect timeout for all services").DurationVar(&ctx.ServiceConnectTimeoutLimit)
 	serve.Flag("service-max-connections", "Max connections for all services").Uint32Var(&ctx.ServiceMaxConnections)
 	serve.Flag("service-max-connections-limit", "Upperbound max connections for all services").Uint32Var(&ctx.ServiceMaxConnectionsLimit)
 	serve.Flag("service-max-pending-requests", "Max pending requests for all services").Uint32Var(&ctx.ServiceMaxPendingRequests)
@@ -243,6 +245,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					ResponseTimeout: ctx.RouteResponseTimeoutLimit,
 				},
 				ServiceOptions: dag.ServiceOptions{
+					ConnectTimeout:                ctx.ServiceConnectTimeout,
 					MaxConnections:                ctx.ServiceMaxConnections,
 					MaxPendingRequests:            ctx.ServiceMaxPendingRequests,
 					MaxRequests:                   ctx.ServiceMaxRequests,
@@ -250,6 +253,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					PerConnectionBufferLimitBytes: ctx.ServicePerConnectionBufferLimitBytes,
 				},
 				ServiceLimits: dag.ServiceLimits{
+					ConnectTimeout:                ctx.ServiceConnectTimeoutLimit,
 					MaxConnections:                ctx.ServiceMaxConnectionsLimit,
 					MaxPendingRequests:            ctx.ServiceMaxPendingRequestsLimit,
 					MaxRequests:                   ctx.ServiceMaxRequestsLimit,

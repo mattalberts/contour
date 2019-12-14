@@ -161,6 +161,12 @@ type serveContext struct {
 	// RoutePerTryTimeoutLimit sets the upperbound per-try timeout allowed per-route
 	RoutePerTryTimeoutLimit time.Duration `yaml:"route-per-try-timeout-limit,omitempty"`
 
+	// ServiceConnectTimeout sets the connect timeout per-service
+	ServiceConnectTimeout time.Duration `yaml:"service-connect-timeout,omitempty"`
+
+	// ServiceConnectTimeoutLimit sets the upperbound connect timeout allowed per-service
+	ServiceConnectTimeoutLimit time.Duration `yaml:"service-connect-timeout-limit,omitempty"`
+
 	// ServiceMaxConnections sets the max connections per-service
 	ServiceMaxConnections uint32 `yaml:"service-max-connections,omitempty"`
 

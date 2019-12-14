@@ -165,6 +165,10 @@ func MinProtoVersion(version string) envoy_api_v2_auth.TlsParameters_TlsProtocol
 	}
 }
 
+func connectTimeout(o Object, options ServiceOptions, limits ServiceLimits) time.Duration {
+	return maxtime(parseTimeoutWithDefault(compatAnnotation(o, "connect-timeout"), options.ConnectTimeout), limits.ConnectTimeout)
+}
+
 // maxConnections returns the value of the first matching max-connections
 // annotation for the following annotations:
 // 1. projectcontour.io/max-connections

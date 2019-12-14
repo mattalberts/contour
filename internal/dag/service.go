@@ -1,7 +1,12 @@
 package dag
 
+import (
+	"time"
+)
+
 // ServiceOptions defines optional service defaults
 type ServiceOptions struct {
+	ConnectTimeout                time.Duration
 	MaxConnections                uint32
 	MaxPendingRequests            uint32
 	MaxRequests                   uint32
@@ -11,6 +16,7 @@ type ServiceOptions struct {
 
 // ServiceLimits defines optional service defaults
 type ServiceLimits struct {
+	ConnectTimeout                time.Duration
 	MaxConnections                uint32
 	MaxPendingRequests            uint32
 	MaxRequests                   uint32

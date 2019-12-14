@@ -121,6 +121,7 @@ func (b *Builder) addService(svc *v1.Service, port *v1.ServicePort, options Serv
 		ServicePort: port,
 
 		Protocol:                      upstreamProtocol(svc, port),
+		ConnectTimeout:                connectTimeout(svc, options, limits),
 		MaxConnections:                maxConnections(svc, options, limits),
 		MaxPendingRequests:            maxPendingRequests(svc, options, limits),
 		MaxRequests:                   maxRequests(svc, options, limits),

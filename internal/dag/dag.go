@@ -284,6 +284,9 @@ type Service struct {
 	// One of "", "h2", "h2c", or "tls".
 	Protocol string
 
+	// ConnectTimeout is the timeout for new network connections to hosts in the cluster.
+	ConnectTimeout time.Duration
+
 	// Circuit breaking limits
 
 	// Max connections is maximum number of connections

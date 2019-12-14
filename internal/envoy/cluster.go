@@ -52,6 +52,10 @@ func Cluster(c *dag.Cluster) *v2.Cluster {
 	cluster.HealthChecks = edshealthcheck(c)
 	cluster.PerConnectionBufferLimitBytes = uint32ptoto(service.PerConnectionBufferLimitBytes)
 
+	if service.ConnectTimeout > 0 {
+		cluster.ConnectTimeout = protobuf.Duration(service.ConnectTimeout)
+	}
+
 	switch len(service.ExternalName) {
 	case 0:
 		// external name not set, cluster will be discovered via EDS
