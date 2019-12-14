@@ -146,6 +146,30 @@ type serveContext struct {
 	// RouteResponseTimeoutLimit sets the upperbound response timeout allowed per-route
 	RouteResponseTimeoutLimit time.Duration `yaml:"route-response-timeout-limit,omitempty"`
 
+	// ServiceMaxConnections sets the max connections per-service
+	ServiceMaxConnections uint32 `yaml:"service-max-connections,omitempty"`
+
+	// ServiceMaxConnectionsLimit sets the upperbound max connections allowed per-service
+	ServiceMaxConnectionsLimit uint32 `yaml:"service-max-connections-limit,omitempty"`
+
+	// ServiceMaxPendingRequests sets the max pending requests per-service
+	ServiceMaxPendingRequests uint32 `yaml:"service-max-pending-requests,omitempty"`
+
+	// ServiceMaxPendingRequestsLimit sets the upperbound max pending requests allowed per-service
+	ServiceMaxPendingRequestsLimit uint32 `yaml:"service-max-pending-requests-limit,omitempty"`
+
+	// ServiceMaxRequests sets the max requests per-service
+	ServiceMaxRequests uint32 `yaml:"service-max-requests,omitempty"`
+
+	// ServiceMaxRequestsLimit sets the upperbound max requests allowed per-service
+	ServiceMaxRequestsLimit uint32 `yaml:"service-max-requests-limit,omitempty"`
+
+	// ServiceMaxRetries sets the max retries per-service
+	ServiceMaxRetries uint32 `yaml:"service-max-retries,omitempty"`
+
+	// ServiceMaxRetriesLimit sets the upperbound max retries allowed per-service
+	ServiceMaxRetriesLimit uint32 `yaml:"service-max-retries-limit,omitempty"`
+
 	// Should Contour fall back to registering an informer for the deprecated
 	// extensions/v1beta1.Ingress type.
 	// By default this value is false, meaning Contour will register an informer for

@@ -106,25 +106,25 @@ func (b *Builder) lookupService(m Meta, port intstr.IntOrString) *Service {
 		p := &svc.Spec.Ports[i]
 		switch {
 		case int(p.Port) == port.IntValue():
-			return b.addService(svc, p)
+			return b.addService(svc, p, b.Source.ServiceOptions, b.Source.ServiceLimits)
 		case port.String() == p.Name:
-			return b.addService(svc, p)
+			return b.addService(svc, p, b.Source.ServiceOptions, b.Source.ServiceLimits)
 		}
 	}
 	return nil
 }
 
-func (b *Builder) addService(svc *v1.Service, port *v1.ServicePort) *Service {
+func (b *Builder) addService(svc *v1.Service, port *v1.ServicePort, options ServiceOptions, limits ServiceLimits) *Service {
 	s := &Service{
 		Name:        svc.Name,
 		Namespace:   svc.Namespace,
 		ServicePort: port,
 
 		Protocol:           upstreamProtocol(svc, port),
-		MaxConnections:     maxConnections(svc),
-		MaxPendingRequests: maxPendingRequests(svc),
-		MaxRequests:        maxRequests(svc),
-		MaxRetries:         maxRetries(svc),
+		MaxConnections:     maxConnections(svc, options, limits),
+		MaxPendingRequests: maxPendingRequests(svc, options, limits),
+		MaxRequests:        maxRequests(svc, options, limits),
+		MaxRetries:         maxRetries(svc, options, limits),
 		ExternalName:       externalName(svc),
 	}
 	b.services[s.toMeta()] = s

@@ -135,6 +135,14 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("route-max-grpc-timeout-limit", "Upperbound max gRPC timeout for all routes").DurationVar(&ctx.RouteMaxGrpcTimeoutLimit)
 	serve.Flag("route-response-timeout", "Request timeout for all routes").DurationVar(&ctx.RouteResponseTimeout)
 	serve.Flag("route-response-timeout-limit", "Upperbound request timeout for all routes").DurationVar(&ctx.RouteResponseTimeoutLimit)
+	serve.Flag("service-max-connections", "Max connections for all services").Uint32Var(&ctx.ServiceMaxConnections)
+	serve.Flag("service-max-connections-limit", "Upperbound max connections for all services").Uint32Var(&ctx.ServiceMaxConnectionsLimit)
+	serve.Flag("service-max-pending-requests", "Max pending requests for all services").Uint32Var(&ctx.ServiceMaxPendingRequests)
+	serve.Flag("service-max-pending-requests-limit", "Upperbound max pending requests for all services").Uint32Var(&ctx.ServiceMaxPendingRequestsLimit)
+	serve.Flag("service-max-requests", "Max requests for all services").Uint32Var(&ctx.ServiceMaxRequests)
+	serve.Flag("service-max-requests-limit", "Upperbound max requests for all services").Uint32Var(&ctx.ServiceMaxRequestsLimit)
+	serve.Flag("service-max-retries", "Max retries for all services").Uint32Var(&ctx.ServiceMaxRetries)
+	serve.Flag("service-max-retries-limit", "Upperbound max retries for all services").Uint32Var(&ctx.ServiceMaxRetriesLimit)
 	serve.Flag("v", "enable logging at specified level").Default("3").IntVar(&ctx.logLevel)
 	return serve, ctx
 }
@@ -214,6 +222,18 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					IdleTimeout:     ctx.RouteIdleTimeoutLimit,
 					MaxGrpcTimeout:  ctx.RouteMaxGrpcTimeoutLimit,
 					ResponseTimeout: ctx.RouteResponseTimeoutLimit,
+				},
+				ServiceOptions: dag.ServiceOptions{
+					MaxConnections:     ctx.ServiceMaxConnections,
+					MaxPendingRequests: ctx.ServiceMaxPendingRequests,
+					MaxRequests:        ctx.ServiceMaxRequests,
+					MaxRetries:         ctx.ServiceMaxRetries,
+				},
+				ServiceLimits: dag.ServiceLimits{
+					MaxConnections:     ctx.ServiceMaxConnectionsLimit,
+					MaxPendingRequests: ctx.ServiceMaxPendingRequestsLimit,
+					MaxRequests:        ctx.ServiceMaxRequestsLimit,
+					MaxRetries:         ctx.ServiceMaxRetriesLimit,
 				},
 			},
 			DisablePermitInsecure: ctx.DisablePermitInsecure,

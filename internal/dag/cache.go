@@ -50,6 +50,12 @@ type KubernetesCache struct {
 	// RouteLimits provides options limits for envoy's routes
 	RouteLimits RouteLimits
 
+	// ServiceOptions provides options defaults for services
+	ServiceOptions ServiceOptions
+
+	// ServiceLimits provides options limits for services
+	ServiceLimits ServiceLimits
+
 	ingresses            map[Meta]*v1beta1.Ingress
 	ingressroutes        map[Meta]*ingressroutev1.IngressRoute
 	httpproxies          map[Meta]*projectcontour.HTTPProxy

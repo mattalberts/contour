@@ -60,6 +60,47 @@ func TestParseUint32(t *testing.T) {
 	}
 }
 
+func TestParseUint32WithDefault(t *testing.T) {
+	for name, tc := range map[string]struct {
+		s    string
+		v    uint32
+		want uint32
+	}{
+		"blank": {
+			s:    "",
+			v:    3,
+			want: 3,
+		},
+		"negative": {
+			s:    "-6", // for alice
+			v:    3,
+			want: 3,
+		},
+		"explicit": {
+			s:    "0",
+			v:    3,
+			want: 0,
+		},
+		"positive": {
+			s:    "2",
+			v:    3,
+			want: 2,
+		},
+		"too large": {
+			s:    "144115188075855872", // larger than uint32
+			v:    3,
+			want: 3,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := parseUInt32WithDefault(tc.s, tc.v)
+			if got != tc.want {
+				t.Fatalf("expected: %v, got %v", tc.want, got)
+			}
+		})
+	}
+}
+
 func TestParseUpstreamProtocols(t *testing.T) {
 	tests := map[string]struct {
 		a    map[string]string

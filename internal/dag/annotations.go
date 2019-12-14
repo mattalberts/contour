@@ -46,6 +46,28 @@ func parseUInt32(s string) uint32 {
 	return uint32(v)
 }
 
+func parseUInt32WithDefault(s string, val uint32) uint32 {
+	if s == "" {
+		return val
+	}
+	v, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return val
+	}
+	return uint32(v)
+}
+
+func limitUInt32(val, max uint32) uint32 {
+	switch {
+	case val == 0, max == 0:
+		return val
+	case val > max:
+		return max
+	default:
+		return val
+	}
+}
+
 // parseUpstreamProtocols parses the annotations map for contour.heptio.com/upstream-protocol.{protocol}
 // and projectcontour.io/upstream-protocol.{protocol} annotations.
 // 'protocol' identifies which protocol must be used in the upstream.
@@ -149,18 +171,18 @@ func MinProtoVersion(version string) envoy_api_v2_auth.TlsParameters_TlsProtocol
 // 2. contour.heptio.com/max-connections
 //
 // '0' is returned if the annotation is absent or unparseable.
-func maxConnections(o Object) uint32 {
-	return parseUInt32(compatAnnotation(o, "max-connections"))
+func maxConnections(o Object, options ServiceOptions, limits ServiceLimits) uint32 {
+	return limitUInt32(parseUInt32WithDefault(compatAnnotation(o, "max-connections"), options.MaxConnections), limits.MaxConnections)
 }
 
-func maxPendingRequests(o Object) uint32 {
-	return parseUInt32(compatAnnotation(o, "max-pending-requests"))
+func maxPendingRequests(o Object, options ServiceOptions, limits ServiceLimits) uint32 {
+	return limitUInt32(parseUInt32WithDefault(compatAnnotation(o, "max-pending-requests"), options.MaxPendingRequests), limits.MaxPendingRequests)
 }
 
-func maxRequests(o Object) uint32 {
-	return parseUInt32(compatAnnotation(o, "max-requests"))
+func maxRequests(o Object, options ServiceOptions, limits ServiceLimits) uint32 {
+	return limitUInt32(parseUInt32WithDefault(compatAnnotation(o, "max-requests"), options.MaxRequests), limits.MaxRequests)
 }
 
-func maxRetries(o Object) uint32 {
-	return parseUInt32(compatAnnotation(o, "max-retries"))
+func maxRetries(o Object, options ServiceOptions, limits ServiceLimits) uint32 {
+	return limitUInt32(parseUInt32WithDefault(compatAnnotation(o, "max-retries"), options.MaxRetries), limits.MaxRetries)
 }

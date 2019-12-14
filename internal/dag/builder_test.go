@@ -4825,6 +4825,38 @@ func TestDAGInsert(t *testing.T) {
 				},
 			),
 		},
+		"insert ingress then service w/ defaulted upstream annotations": {
+			kc: &KubernetesCache{
+				ServiceOptions: ServiceOptions{
+					MaxConnections:     128,
+					MaxPendingRequests: 256,
+					MaxRequests:        64,
+					MaxRetries:         3,
+				},
+			},
+			objs: []interface{}{
+				i1,
+				s1,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*",
+							prefixroute("/", &Service{
+								Name:               s1b.Name,
+								Namespace:          s1b.Namespace,
+								ServicePort:        &s1b.Spec.Ports[0],
+								MaxConnections:     128,
+								MaxPendingRequests: 256,
+								MaxRequests:        64,
+								MaxRetries:         3,
+							}),
+						),
+					),
+				},
+			),
+		},
 		"insert ingress then service w/ upstream annotations": {
 			objs: []interface{}{
 				i1,
@@ -4843,6 +4875,38 @@ func TestDAGInsert(t *testing.T) {
 								MaxPendingRequests: 4096,
 								MaxRequests:        404,
 								MaxRetries:         7,
+							}),
+						),
+					),
+				},
+			),
+		},
+		"insert ingress then service w/ limited upstream annotations": {
+			kc: &KubernetesCache{
+				ServiceLimits: ServiceLimits{
+					MaxConnections:     128,
+					MaxPendingRequests: 256,
+					MaxRequests:        64,
+					MaxRetries:         3,
+				},
+			},
+			objs: []interface{}{
+				i1,
+				s1b,
+			},
+			want: listeners(
+				&Listener{
+					Port: 80,
+					VirtualHosts: virtualhosts(
+						virtualhost("*",
+							prefixroute("/", &Service{
+								Name:               s1b.Name,
+								Namespace:          s1b.Namespace,
+								ServicePort:        &s1b.Spec.Ports[0],
+								MaxConnections:     128,
+								MaxPendingRequests: 256,
+								MaxRequests:        64,
+								MaxRetries:         3,
 							}),
 						),
 					),
