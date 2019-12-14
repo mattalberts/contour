@@ -95,7 +95,7 @@ type serveContext struct {
 	TLSConfig `yaml:"tls,omitempty"`
 
 	// EnableTracing configures envoy's listener open-tracing control
-	EnableTracing bool
+	EnableTracing bool `yaml:"enavble-tracing,omitempty"`
 
 	// DisablePermitInsecure disables the use of the
 	// permitInsecure field in IngressRoute.
@@ -111,40 +111,40 @@ type serveContext struct {
 	DefaultSecret resource
 
 	// DelayedCloseTimeout sets the client drain timeout globally.
-	DelayedCloseTimeout time.Duration
+	DelayedCloseTimeout time.Duration `yaml:"delayed-close-timeout,omitempty"`
 
 	// DrainTimeout sets the client drain timeout globally.
-	DrainTimeout time.Duration
+	DrainTimeout time.Duration `yaml:"drain-timeout,omitempty"`
 
 	// RequestTimeout sets the client idle timeout globally for http.
-	IdleTimeout time.Duration
+	IdleTimeout time.Duration `yaml:"idle-timeout,omitempty"`
 
 	// RequestTimeout sets the client request timeout globally for Contour.
 	RequestTimeout time.Duration `yaml:"request-timeout,omitempty"`
 
 	// StreamIdleTimeout the client stream idle timeout globally for http.
-	StreamIdleTimeout time.Duration
+	StreamIdleTimeout time.Duration `yaml:"stream-idle-timeout,omitempty"`
 
 	// ProxyIdleTimeout sets the client idle timeout globally for tcp proxy.
-	ProxyIdleTimeout time.Duration
+	ProxyIdleTimeout time.Duration `yaml:"proxy-idle-timeout,omitempty"`
 
 	// RouteIdleTimeout sets the idle timeout per-route
-	RouteIdleTimeout time.Duration
+	RouteIdleTimeout time.Duration `yaml:"route-idle-timeout,omitempty"`
 
 	// RouteIdleTimeoutLimit sets the upperbound idle timeout allowed per-route
-	RouteIdleTimeoutLimit time.Duration
+	RouteIdleTimeoutLimit time.Duration `yaml:"route-idle-timeout-limit,omitempty"`
 
 	// RouteMaxGrpcTimeout sets the default max grpc timeout allowed per-route
-	RouteMaxGrpcTimeout time.Duration
+	RouteMaxGrpcTimeout time.Duration `yaml:"route-max-grpc-timeout,omitempty"`
 
 	// RouteMaxGrpcTimeoutLimit sets the upperbound max grpc timeout allowed per-route
-	RouteMaxGrpcTimeoutLimit time.Duration
+	RouteMaxGrpcTimeoutLimit time.Duration `yaml:"route-max-grpc-timeout-limit,omitempty"`
 
 	// RouteResponseTimeout sets the response timeout per-route
-	RouteResponseTimeout time.Duration
+	RouteResponseTimeout time.Duration `yaml:"route-response-timeout,omitempty"`
 
 	// RouteResponseTimeoutLimit sets the upperbound response timeout allowed per-route
-	RouteResponseTimeoutLimit time.Duration
+	RouteResponseTimeoutLimit time.Duration `yaml:"route-response-timeout-limit,omitempty"`
 
 	// Should Contour fall back to registering an informer for the deprecated
 	// extensions/v1beta1.Ingress type.
