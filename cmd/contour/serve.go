@@ -212,7 +212,7 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				},
 				RouteLimits: dag.RouteLimits{
 					IdleTimeout:     ctx.RouteIdleTimeoutLimit,
-					MaxGrpcTimeout:  ctx.RouteMaxGrpcTimeout,
+					MaxGrpcTimeout:  ctx.RouteMaxGrpcTimeoutLimit,
 					ResponseTimeout: ctx.RouteResponseTimeoutLimit,
 				},
 			},
