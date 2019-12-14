@@ -132,10 +132,14 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("proxy-idle-timeout", "TCP proxy idle timeout for all listeners").DurationVar(&ctx.ProxyIdleTimeout)
 	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeout)
 	serve.Flag("route-idle-timeout-limit", "Upperbound idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeoutLimit)
+	serve.Flag("route-num-retries", "Number of retries for all routes").Uint32Var(&ctx.RouteNumRetries)
+	serve.Flag("route-num-retries-limit", "Upperbound number of retries for all routes").Uint32Var(&ctx.RouteNumRetriesLimit)
 	serve.Flag("route-max-grpc-timeout", "Max gRPC timeout for all routes").DurationVar(&ctx.RouteMaxGrpcTimeout)
 	serve.Flag("route-max-grpc-timeout-limit", "Upperbound max gRPC timeout for all routes").DurationVar(&ctx.RouteMaxGrpcTimeoutLimit)
 	serve.Flag("route-response-timeout", "Request timeout for all routes").DurationVar(&ctx.RouteResponseTimeout)
 	serve.Flag("route-response-timeout-limit", "Upperbound request timeout for all routes").DurationVar(&ctx.RouteResponseTimeoutLimit)
+	serve.Flag("route-per-try-timeout", "Per-try timeout for all routes").DurationVar(&ctx.RoutePerTryTimeout)
+	serve.Flag("route-per-try-timeout-limit", "Upperbound Per-try timeout for all routes").DurationVar(&ctx.RoutePerTryTimeoutLimit)
 	serve.Flag("service-max-connections", "Max connections for all services").Uint32Var(&ctx.ServiceMaxConnections)
 	serve.Flag("service-max-connections-limit", "Upperbound max connections for all services").Uint32Var(&ctx.ServiceMaxConnectionsLimit)
 	serve.Flag("service-max-pending-requests", "Max pending requests for all services").Uint32Var(&ctx.ServiceMaxPendingRequests)
@@ -226,12 +230,16 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				},
 				RouteOptions: dag.RouteOptions{
 					IdleTimeout:     ctx.RouteIdleTimeout,
+					NumRetries:      ctx.RouteNumRetries,
 					MaxGrpcTimeout:  ctx.RouteMaxGrpcTimeout,
+					PerTryTimeout:   ctx.ProxyIdleTimeout,
 					ResponseTimeout: ctx.RouteResponseTimeout,
 				},
 				RouteLimits: dag.RouteLimits{
 					IdleTimeout:     ctx.RouteIdleTimeoutLimit,
+					NumRetries:      ctx.RouteNumRetriesLimit,
 					MaxGrpcTimeout:  ctx.RouteMaxGrpcTimeoutLimit,
+					PerTryTimeout:   ctx.RoutePerTryTimeoutLimit,
 					ResponseTimeout: ctx.RouteResponseTimeoutLimit,
 				},
 				ServiceOptions: dag.ServiceOptions{

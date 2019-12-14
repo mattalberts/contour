@@ -137,6 +137,12 @@ type serveContext struct {
 	// RouteIdleTimeoutLimit sets the upperbound idle timeout allowed per-route
 	RouteIdleTimeoutLimit time.Duration `yaml:"route-idle-timeout-limit,omitempty"`
 
+	// RouteNumRetries sets the number of retries per-route
+	RouteNumRetries uint32 `yaml:"route-num-retries,omitempty"`
+
+	// RouteResponseTimeoutLimit sets the upperbound number of retries allowed per-route
+	RouteNumRetriesLimit uint32 `yaml:"route-num-retries-limit,omitempty"`
+
 	// RouteMaxGrpcTimeout sets the default max grpc timeout allowed per-route
 	RouteMaxGrpcTimeout time.Duration `yaml:"route-max-grpc-timeout,omitempty"`
 
@@ -148,6 +154,12 @@ type serveContext struct {
 
 	// RouteResponseTimeoutLimit sets the upperbound response timeout allowed per-route
 	RouteResponseTimeoutLimit time.Duration `yaml:"route-response-timeout-limit,omitempty"`
+
+	// RoutePerTryTimeout sets the per-try timeout per-route
+	RoutePerTryTimeout time.Duration `yaml:"route-per-try-timeout,omitempty"`
+
+	// RoutePerTryTimeoutLimit sets the upperbound per-try timeout allowed per-route
+	RoutePerTryTimeoutLimit time.Duration `yaml:"route-per-try-timeout-limit,omitempty"`
 
 	// ServiceMaxConnections sets the max connections per-service
 	ServiceMaxConnections uint32 `yaml:"service-max-connections,omitempty"`

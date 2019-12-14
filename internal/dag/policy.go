@@ -34,7 +34,7 @@ func retryPolicy(rp *projcontour.RetryPolicy) *RetryPolicy {
 }
 
 // ingressRetryPolicy builds a RetryPolicy from ingress annotations.
-func ingressRetryPolicy(ingress *v1beta1.Ingress) *RetryPolicy {
+func ingressRetryPolicy(ingress *v1beta1.Ingress, options RouteOptions, limits RouteLimits) *RetryPolicy {
 	retryOn := compatAnnotation(ingress, "retry-on")
 	if len(retryOn) < 1 {
 		return nil
@@ -44,11 +44,11 @@ func ingressRetryPolicy(ingress *v1beta1.Ingress) *RetryPolicy {
 		RetryOn: retryOn,
 		// TODO(dfc) numRetries may parse as 0, which is inconsistent with
 		// retryPolicyIngressRoute()'s default value of 1.
-		NumRetries: numRetries(ingress),
+		NumRetries: numRetries(ingress, options, limits),
 		// TODO(dfc) perTryTimeout will parse to -1, infinite, in the case of
 		// invalid data, this is inconsistent with retryPolicyIngressRoute()'s default value
 		// of 0 duration.
-		PerTryTimeout: perTryTimeout(ingress),
+		PerTryTimeout: perTryTimeout(ingress, options, limits),
 	}
 }
 

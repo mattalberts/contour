@@ -1044,7 +1044,7 @@ func route(ingress *v1beta1.Ingress, path string, service *Service, options Rout
 		HTTPSUpgrade:  tlsRequired(ingress),
 		Websocket:     wr[path],
 		TimeoutPolicy: ingressTimeoutPolicy(ingress, options, limits),
-		RetryPolicy:   ingressRetryPolicy(ingress),
+		RetryPolicy:   ingressRetryPolicy(ingress, options, limits),
 		Clusters: []*Cluster{{
 			Upstream: service,
 		}},

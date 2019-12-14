@@ -7,13 +7,17 @@ import (
 // RouteOptions defines optional route defaults
 type RouteOptions struct {
 	IdleTimeout     time.Duration
+	NumRetries      uint32
 	MaxGrpcTimeout  time.Duration
+	PerTryTimeout   time.Duration
 	ResponseTimeout time.Duration
 }
 
 // RouteLimits defines optional route defaults
 type RouteLimits struct {
 	IdleTimeout     time.Duration
+	NumRetries      uint32
 	MaxGrpcTimeout  time.Duration
+	PerTryTimeout   time.Duration
 	ResponseTimeout time.Duration
 }

@@ -123,13 +123,13 @@ func websocketRoutes(i *v1beta1.Ingress) map[string]bool {
 
 // numRetries returns the number of retries specified by the "contour.heptio.com/num-retries"
 // or "projectcontour.io/num-retries" annotation.
-func numRetries(i *v1beta1.Ingress) uint32 {
-	return parseUInt32(compatAnnotation(i, "num-retries"))
+func numRetries(i *v1beta1.Ingress, options RouteOptions, limits RouteLimits) uint32 {
+	return limitUInt32(parseUInt32WithDefault(compatAnnotation(i, "num-retries"), options.NumRetries), limits.NumRetries)
 }
 
 // perTryTimeout returns the duration envoy will wait per retry cycle.
-func perTryTimeout(i *v1beta1.Ingress) time.Duration {
-	return parseTimeout(compatAnnotation(i, "per-try-timeout"))
+func perTryTimeout(i *v1beta1.Ingress, options RouteOptions, limits RouteLimits) time.Duration {
+	return maxtime(parseTimeoutWithDefault(compatAnnotation(i, "per-try-timeout"), options.PerTryTimeout), limits.PerTryTimeout)
 }
 
 // ingressClass returns the first matching ingress class for the following

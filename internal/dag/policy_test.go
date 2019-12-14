@@ -26,8 +26,10 @@ import (
 
 func TestRetryPolicyIngress(t *testing.T) {
 	tests := map[string]struct {
-		i    *v1beta1.Ingress
-		want *RetryPolicy
+		i       *v1beta1.Ingress
+		options RouteOptions
+		limits  RouteLimits
+		want    *RetryPolicy
 	}{
 		"no anotations": {
 			i:    &v1beta1.Ingress{},
@@ -43,6 +45,44 @@ func TestRetryPolicyIngress(t *testing.T) {
 			},
 			want: &RetryPolicy{
 				RetryOn: "5xx",
+			},
+		},
+		"retry-on-defaulted": {
+			i: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"projectcontour.io/retry-on": "5xx",
+					},
+				},
+			},
+			options: RouteOptions{
+				NumRetries:    3,
+				PerTryTimeout: 10 * time.Second,
+			},
+			want: &RetryPolicy{
+				RetryOn:       "5xx",
+				NumRetries:    3,
+				PerTryTimeout: 10 * time.Second,
+			},
+		},
+		"retry-on-limited": {
+			i: &v1beta1.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"projectcontour.io/retry-on":        "5xx",
+						"projectcontour.io/num-retries":     "99",
+						"projectcontour.io/per-try-timeout": "10m",
+					},
+				},
+			},
+			limits: RouteLimits{
+				NumRetries:    3,
+				PerTryTimeout: 10 * time.Second,
+			},
+			want: &RetryPolicy{
+				RetryOn:       "5xx",
+				NumRetries:    3,
+				PerTryTimeout: 10 * time.Second,
 			},
 		},
 		"explicitly zero retries": {
@@ -165,7 +205,7 @@ func TestRetryPolicyIngress(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := ingressRetryPolicy(tc.i)
+			got := ingressRetryPolicy(tc.i, tc.options, tc.limits)
 			assert.Equal(t, tc.want, got)
 		})
 	}
