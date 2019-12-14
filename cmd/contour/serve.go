@@ -189,10 +189,10 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				AccessLogFields:        ctx.AccessLogFields,
 				MinimumProtocolVersion: dag.MinProtoVersion(ctx.TLSConfig.MinimumProtocolVersion),
 				ListenerOptions: envoy.ListenerOptions{
+					EnableTracing:                 ctx.EnableTracing,
 					PerConnectionBufferLimitBytes: ctx.PerConnectionBufferLimitBytes,
 				},
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
-					EnableTracing:     ctx.EnableTracing,
 					DrainTimeout:      safetime(ctx.DrainTimeout),
 					IdleTimeout:       safetime(ctx.IdleTimeout),
 					RequestTimeout:    safetime(ctx.RequestTimeout),
@@ -204,10 +204,10 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 			},
 			ListenerCache: contour.NewListenerCache(ctx.statsAddr, ctx.statsPort, envoy.StatsOptions{
 				ListenerOptions: envoy.ListenerOptions{
+					EnableTracing:                 ctx.EnableTracing,
 					PerConnectionBufferLimitBytes: ctx.PerConnectionBufferLimitBytes,
 				},
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
-					EnableTracing:     ctx.EnableTracing,
 					DrainTimeout:      safetime(ctx.DrainTimeout),
 					IdleTimeout:       safetime(ctx.IdleTimeout),
 					RequestTimeout:    safetime(ctx.RequestTimeout),

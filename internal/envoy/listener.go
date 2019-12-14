@@ -50,6 +50,7 @@ func ProxyProtocol() *envoy_api_v2_listener.ListenerFilter {
 
 // ListenerOptions defines optional configrations for listeners
 type ListenerOptions struct {
+	EnableTracing                    bool
 	PerConnectionBufferLimitBytes    uint32
 	ListenerFiltersTimeout           time.Duration
 	ContinueOnListenerFiltersTimeout bool
@@ -62,6 +63,7 @@ func Listener(name, address string, port int, options ListenerOptions, lf []*env
 		Name:                             name,
 		Address:                          SocketAddress(address, port),
 		PerConnectionBufferLimitBytes:    uint32ptoto(options.PerConnectionBufferLimitBytes),
+		TrafficDirection:                 trafficdirection(options.EnableTracing),
 		ListenerFilters:                  lf,
 		ListenerFiltersTimeout:           durationptoto(options.ListenerFiltersTimeout),
 		ContinueOnListenerFiltersTimeout: options.ContinueOnListenerFiltersTimeout,
@@ -78,6 +80,13 @@ func Listener(name, address string, port int, options ListenerOptions, lf []*env
 	return l
 }
 
+func trafficdirection(enableTracing bool) envoy_api_v2_core.TrafficDirection {
+	if enableTracing {
+		return envoy_api_v2_core.TrafficDirection_OUTBOUND
+	}
+	return envoy_api_v2_core.TrafficDirection_UNSPECIFIED
+}
+
 func uint32ptoto(v uint32) *wrappers.UInt32Value {
 	if v > 0 {
 		return protobuf.UInt32(v)
@@ -87,7 +96,6 @@ func uint32ptoto(v uint32) *wrappers.UInt32Value {
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	EnableTracing       bool
 	DelayedCloseTimeout time.Duration
 	DrainTimeout        time.Duration
 	IdleTimeout         time.Duration
@@ -141,7 +149,6 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				AccessLog:        accesslogger,
 				UseRemoteAddress: protobuf.Bool(true),
 				NormalizePath:    protobuf.Bool(true),
-				Tracing:          tracing(options.EnableTracing),
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
@@ -155,15 +162,6 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 			}),
 		},
 	}
-}
-
-func tracing(enableTracing bool) *http.HttpConnectionManager_Tracing {
-	if enableTracing {
-		return &http.HttpConnectionManager_Tracing{
-			OperationName: http.HttpConnectionManager_Tracing_EGRESS,
-		}
-	}
-	return nil
 }
 
 func tvd(d, v time.Duration) time.Duration {

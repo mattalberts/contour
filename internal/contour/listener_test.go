@@ -19,6 +19,7 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/golang/protobuf/proto"
 	ingressroutev1 "github.com/projectcontour/contour/apis/contour/v1beta1"
@@ -1057,7 +1058,7 @@ func TestListenerVisit(t *testing.T) {
 		},
 		"--enable-trace": {
 			ListenerVisitorConfig: ListenerVisitorConfig{
-				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
+				ListenerOptions: envoy.ListenerOptions{
 					EnableTracing: true,
 				},
 			},
@@ -1107,14 +1108,14 @@ func TestListenerVisit(t *testing.T) {
 				},
 			},
 			want: listenermap(&v2.Listener{
-				Name:    ENVOY_HTTP_LISTENER,
-				Address: envoy.SocketAddress(DEFAULT_HTTP_LISTENER_ADDRESS, DEFAULT_HTTP_LISTENER_PORT),
-				FilterChains: envoy.FilterChains(envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, envoy.FileAccessLogEnvoy(DEFAULT_HTTP_ACCESS_LOG), envoy.HTTPConnectionOptions{
-					EnableTracing: true,
-				})),
+				Name:             ENVOY_HTTP_LISTENER,
+				TrafficDirection: envoy_api_v2_core.TrafficDirection_OUTBOUND,
+				Address:          envoy.SocketAddress(DEFAULT_HTTP_LISTENER_ADDRESS, DEFAULT_HTTP_LISTENER_PORT),
+				FilterChains:     envoy.FilterChains(envoy.HTTPConnectionManager(ENVOY_HTTP_LISTENER, envoy.FileAccessLogEnvoy(DEFAULT_HTTP_ACCESS_LOG), envoy.HTTPConnectionOptions{})),
 			}, &v2.Listener{
-				Name:    ENVOY_HTTPS_LISTENER,
-				Address: envoy.SocketAddress(DEFAULT_HTTPS_LISTENER_ADDRESS, DEFAULT_HTTPS_LISTENER_PORT),
+				Name:             ENVOY_HTTPS_LISTENER,
+				TrafficDirection: envoy_api_v2_core.TrafficDirection_OUTBOUND,
+				Address:          envoy.SocketAddress(DEFAULT_HTTPS_LISTENER_ADDRESS, DEFAULT_HTTPS_LISTENER_PORT),
 				ListenerFilters: envoy.ListenerFilters(
 					envoy.TLSInspector(),
 				),
@@ -1123,9 +1124,7 @@ func TestListenerVisit(t *testing.T) {
 						ServerNames: []string{"whatever.example.com"},
 					},
 					TlsContext: tlscontext(envoy_api_v2_auth.TlsParameters_TLSv1_1, "h2", "http/1.1"),
-					Filters: envoy.Filters(envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, envoy.FileAccessLogEnvoy(DEFAULT_HTTP_ACCESS_LOG), envoy.HTTPConnectionOptions{
-						EnableTracing: true,
-					})),
+					Filters:    envoy.Filters(envoy.HTTPConnectionManager(ENVOY_HTTPS_LISTENER, envoy.FileAccessLogEnvoy(DEFAULT_HTTP_ACCESS_LOG), envoy.HTTPConnectionOptions{})),
 				}},
 			}),
 		},
