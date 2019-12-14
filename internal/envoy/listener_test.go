@@ -242,6 +242,9 @@ func TestHTTPConnectionManager(t *testing.T) {
 						}, {
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(60 * time.Second),
+						},
 						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 							// Enable support for HTTP/1.0 requests that carry
 							// a Host: header. See #537.
@@ -250,7 +253,6 @@ func TestHTTPConnectionManager(t *testing.T) {
 						AccessLog:                 FileAccessLogEnvoy("/dev/stdout"),
 						UseRemoteAddress:          protobuf.Bool(true),
 						NormalizePath:             protobuf.Bool(true),
-						IdleTimeout:               protobuf.Duration(60 * time.Second),
 						RequestTimeout:            protobuf.Duration(0),
 						PreserveExternalRequestId: true,
 					}),
@@ -294,6 +296,9 @@ func TestHTTPConnectionManager(t *testing.T) {
 						}, {
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(60 * time.Second),
+						},
 						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 							// Enable support for HTTP/1.0 requests that carry
 							// a Host: header. See #537.
@@ -303,7 +308,6 @@ func TestHTTPConnectionManager(t *testing.T) {
 						UseRemoteAddress:          protobuf.Bool(true),
 						NormalizePath:             protobuf.Bool(true),
 						DelayedCloseTimeout:       protobuf.Duration(10 * time.Second),
-						IdleTimeout:               protobuf.Duration(60 * time.Second),
 						RequestTimeout:            protobuf.Duration(0),
 						PreserveExternalRequestId: true,
 					}),
@@ -347,6 +351,9 @@ func TestHTTPConnectionManager(t *testing.T) {
 						}, {
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(60 * time.Second),
+						},
 						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 							// Enable support for HTTP/1.0 requests that carry
 							// a Host: header. See #537.
@@ -356,7 +363,6 @@ func TestHTTPConnectionManager(t *testing.T) {
 						UseRemoteAddress:          protobuf.Bool(true),
 						NormalizePath:             protobuf.Bool(true),
 						DrainTimeout:              protobuf.Duration(10 * time.Second),
-						IdleTimeout:               protobuf.Duration(60 * time.Second),
 						RequestTimeout:            protobuf.Duration(0),
 						PreserveExternalRequestId: true,
 					}),
@@ -400,6 +406,9 @@ func TestHTTPConnectionManager(t *testing.T) {
 						}, {
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(10 * time.Second),
+						},
 						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 							// Enable support for HTTP/1.0 requests that carry
 							// a Host: header. See #537.
@@ -408,7 +417,6 @@ func TestHTTPConnectionManager(t *testing.T) {
 						AccessLog:                 FileAccessLogEnvoy("/dev/stdout"),
 						UseRemoteAddress:          protobuf.Bool(true),
 						NormalizePath:             protobuf.Bool(true),
-						IdleTimeout:               protobuf.Duration(10 * time.Second),
 						RequestTimeout:            protobuf.Duration(0),
 						PreserveExternalRequestId: true,
 					}),
@@ -452,6 +460,9 @@ func TestHTTPConnectionManager(t *testing.T) {
 						}, {
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(60 * time.Second),
+						},
 						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 							// Enable support for HTTP/1.0 requests that carry
 							// a Host: header. See #537.
@@ -460,7 +471,6 @@ func TestHTTPConnectionManager(t *testing.T) {
 						AccessLog:                 FileAccessLogEnvoy("/dev/stdout"),
 						UseRemoteAddress:          protobuf.Bool(true),
 						NormalizePath:             protobuf.Bool(true),
-						IdleTimeout:               protobuf.Duration(60 * time.Second),
 						RequestTimeout:            protobuf.Duration(10 * time.Second),
 						PreserveExternalRequestId: true,
 					}),
@@ -504,6 +514,9 @@ func TestHTTPConnectionManager(t *testing.T) {
 						}, {
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(60 * time.Second),
+						},
 						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 							// Enable support for HTTP/1.0 requests that carry
 							// a Host: header. See #537.
@@ -512,7 +525,6 @@ func TestHTTPConnectionManager(t *testing.T) {
 						AccessLog:                 FileAccessLogEnvoy("/dev/stdout"),
 						UseRemoteAddress:          protobuf.Bool(true),
 						NormalizePath:             protobuf.Bool(true),
-						IdleTimeout:               protobuf.Duration(60 * time.Second),
 						RequestTimeout:            protobuf.Duration(0),
 						StreamIdleTimeout:         protobuf.Duration(10 * time.Second),
 						PreserveExternalRequestId: true,

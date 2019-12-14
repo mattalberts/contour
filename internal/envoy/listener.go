@@ -110,6 +110,9 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				}, {
 					Name: wellknown.Router,
 				}},
+				CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+					IdleTimeout: ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
+				},
 				HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
 					// Enable support for HTTP/1.0 requests that carry
 					// a Host: header. See #537.
@@ -124,7 +127,6 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				// without stopping slow connections from being terminated too quickly.
 				DelayedCloseTimeout: durationptoto(options.DelayedCloseTimeout),
 				DrainTimeout:        durationptoto(options.DrainTimeout),
-				IdleTimeout:         ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
 				RequestTimeout:      ptypes.DurationProto(options.RequestTimeout),
 				StreamIdleTimeout:   durationptoto(options.StreamIdleTimeout),
 

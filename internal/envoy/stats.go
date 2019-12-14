@@ -17,6 +17,7 @@ import (
 	"time"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_api_v2_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	http "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -76,10 +77,12 @@ func StatsListener(address string, port int, options HTTPConnectionOptions) *v2.
 						HttpFilters: []*http.HttpFilter{{
 							Name: wellknown.Router,
 						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
+						},
 						NormalizePath:       protobuf.Bool(true),
 						DelayedCloseTimeout: durationptoto(options.DelayedCloseTimeout),
 						DrainTimeout:        durationptoto(options.DrainTimeout),
-						IdleTimeout:         ptypes.DurationProto(tvd(options.IdleTimeout, 60*time.Second)),
 						RequestTimeout:      ptypes.DurationProto(options.RequestTimeout),
 						StreamIdleTimeout:   durationptoto(options.StreamIdleTimeout),
 					}),
