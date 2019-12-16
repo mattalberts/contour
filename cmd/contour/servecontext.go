@@ -128,6 +128,15 @@ type serveContext struct {
 	// InitialStreamWindowSize initial stream-level flow-control window size.
 	InitialStreamWindowSize uint32 `yaml:"initial-stream-window-size,omitempty"`
 
+	// KeepAliveProbes keepalive probe count to send without response before deciding the connection is dead.
+	KeepAliveProbes uint32 `yaml:"keepalive-probes,omitempty"`
+
+	// KeepAliveTime idle seconds before keep-alive probes start being sent.
+	KeepAliveTime uint32 `yaml:"keepalive-time,omitempty"`
+
+	// KeepAliveInterval seconds between keep-alive probes.
+	KeepAliveInterval uint32 `yaml:"keepalive-interval,omitempty"`
+
 	// MaxConcurrentStreams maximum concurrent streams allowed for peer on one HTTP/2 connection.
 	MaxConcurrentStreams uint32 `yaml:"max-concurrent-streams,omitempty"`
 

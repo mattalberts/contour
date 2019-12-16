@@ -129,6 +129,9 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
 	serve.Flag("initial-connection-window-size", "Initial HTTP/2 connection-level flow-control window size for all listenrs").Uint32Var(&ctx.InitialConnectionWindowSize)
 	serve.Flag("initial-stream-window-size", "Initial HTTP/2 stream-level flow-control window size for all listenrs").Uint32Var(&ctx.InitialStreamWindowSize)
+	serve.Flag("keepalive-interval", "Seconds between keep-alive probes").Uint32Var(&ctx.KeepAliveInterval)
+	serve.Flag("keepalive-probes", "Probes to send without response before deciding the connection is dead").Uint32Var(&ctx.KeepAliveProbes)
+	serve.Flag("keepalive-time", "Idle seconds before keep-alive probes start being sent").Uint32Var(&ctx.KeepAliveTime)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
 	serve.Flag("stream-error-on-invalid-http-messaging", "Allows invalid HTTP messaging and headers on HTTT/2 streams for all listeners").BoolVar(&ctx.StreamErrorOnInvalidHTTPMessaging)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.StreamIdleTimeout)
@@ -276,6 +279,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 						InitialConnectionWindowSize:       ctx.InitialConnectionWindowSize,
 						InitialStreamWindowSize:           ctx.InitialStreamWindowSize,
 						StreamErrorOnInvalidHTTPMessaging: ctx.StreamErrorOnInvalidHTTPMessaging,
+					},
+					UpstreamConnectionOptions: dag.UpstreamConnectionOptions{
+						KeepAliveInterval: ctx.KeepAliveInterval,
+						KeepAliveProbes:   ctx.KeepAliveProbes,
+						KeepAliveTime:     ctx.KeepAliveTime,
 					},
 				},
 				ServiceLimits: dag.ServiceLimits{

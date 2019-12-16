@@ -311,6 +311,9 @@ type Service struct {
 	// HTTP2ProtocolOptions defines HTTP/2 protocol options
 	HTTP2ProtocolOptions HTTP2ProtocolOptions
 
+	// UpstreamConnectionOptions defines upstream connection options
+	UpstreamConnectionOptions UpstreamConnectionOptions
+
 	// ExternalName is an optional field referencing a dns entry for Service type "ExternalName"
 	ExternalName string
 }

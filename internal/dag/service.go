@@ -13,6 +13,7 @@ type ServiceOptions struct {
 	MaxRetries                    uint32
 	PerConnectionBufferLimitBytes uint32
 	HTTP2ProtocolOptions          HTTP2ProtocolOptions
+	UpstreamConnectionOptions     UpstreamConnectionOptions
 }
 
 // ServiceLimits defines optional service defaults
@@ -32,4 +33,11 @@ type HTTP2ProtocolOptions struct {
 	InitialConnectionWindowSize       uint32
 	InitialStreamWindowSize           uint32
 	StreamErrorOnInvalidHTTPMessaging bool
+}
+
+// UpstreamConnectionOptions defines keepalive options for http2 conntections
+type UpstreamConnectionOptions struct {
+	KeepAliveInterval uint32
+	KeepAliveProbes   uint32
+	KeepAliveTime     uint32
 }

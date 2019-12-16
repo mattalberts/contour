@@ -97,6 +97,7 @@ func Cluster(c *dag.Cluster) *v2.Cluster {
 		fallthrough
 	case "h2c":
 		cluster.Http2ProtocolOptions = http2proto(service.HTTP2ProtocolOptions)
+		cluster.UpstreamConnectionOptions = upstreamoptions(service.UpstreamConnectionOptions)
 	}
 
 	return cluster
@@ -120,6 +121,28 @@ func http2proto(options dag.HTTP2ProtocolOptions) *envoy_api_v2_core.Http2Protoc
 		h2opts.StreamErrorOnInvalidHttpMessaging = options.StreamErrorOnInvalidHTTPMessaging
 	}
 	return h2opts
+}
+
+func upstreamoptions(options dag.UpstreamConnectionOptions) *v2.UpstreamConnectionOptions {
+	ok, tcpopts := false, &envoy_api_v2_core.TcpKeepalive{}
+	if options.KeepAliveInterval > 0 {
+		tcpopts.KeepaliveInterval = protobuf.UInt32(options.KeepAliveInterval)
+		ok = true
+	}
+	if options.KeepAliveProbes > 0 {
+		tcpopts.KeepaliveProbes = protobuf.UInt32(options.KeepAliveProbes)
+		ok = true
+	}
+	if options.KeepAliveTime > 0 {
+		tcpopts.KeepaliveTime = protobuf.UInt32(options.KeepAliveTime)
+		ok = true
+	}
+	if !ok {
+		return nil
+	}
+	return &v2.UpstreamConnectionOptions{
+		TcpKeepalive: tcpopts,
+	}
 }
 
 func upstreamValidationCACert(c *dag.Cluster) []byte {
