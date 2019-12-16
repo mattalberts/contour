@@ -96,11 +96,21 @@ func uint32ptoto(v uint32) *wrappers.UInt32Value {
 
 // HTTPConnectionOptions defines optional configrations for http conntections
 type HTTPConnectionOptions struct {
-	DelayedCloseTimeout time.Duration
-	DrainTimeout        time.Duration
-	IdleTimeout         time.Duration
-	RequestTimeout      time.Duration
-	StreamIdleTimeout   time.Duration
+	DelayedCloseTimeout  time.Duration
+	DrainTimeout         time.Duration
+	IdleTimeout          time.Duration
+	RequestTimeout       time.Duration
+	StreamIdleTimeout    time.Duration
+	HTTP2ProtocolOptions HTTP2ProtocolOptions
+}
+
+// HTTP2ProtocolOptions defines protocol options for http2 conntections
+type HTTP2ProtocolOptions struct {
+	AllowConnect                      bool
+	MaxConcurrentStreams              uint32
+	InitialConnectionWindowSize       uint32
+	InitialStreamWindowSize           uint32
+	StreamErrorOnInvalidHTTPMessaging bool
 }
 
 // HTTPConnectionManager creates a new HTTP Connection Manager filter
@@ -146,9 +156,10 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 					// a Host: header. See #537.
 					AcceptHttp_10: true,
 				},
-				AccessLog:        accesslogger,
-				UseRemoteAddress: protobuf.Bool(true),
-				NormalizePath:    protobuf.Bool(true),
+				Http2ProtocolOptions: http2options(options.HTTP2ProtocolOptions),
+				AccessLog:            accesslogger,
+				UseRemoteAddress:     protobuf.Bool(true),
+				NormalizePath:        protobuf.Bool(true),
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
@@ -162,6 +173,34 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 			}),
 		},
 	}
+}
+
+func http2options(options HTTP2ProtocolOptions) *envoy_api_v2_core.Http2ProtocolOptions {
+	ok, h2opts := false, &envoy_api_v2_core.Http2ProtocolOptions{}
+	if options.AllowConnect {
+		h2opts.AllowConnect = options.AllowConnect
+		ok = true
+	}
+	if options.MaxConcurrentStreams > 0 {
+		h2opts.MaxConcurrentStreams = protobuf.UInt32(options.MaxConcurrentStreams)
+		ok = true
+	}
+	if options.InitialConnectionWindowSize > 0 {
+		h2opts.InitialConnectionWindowSize = protobuf.UInt32(options.InitialConnectionWindowSize)
+		ok = true
+	}
+	if options.InitialStreamWindowSize > 0 {
+		h2opts.InitialStreamWindowSize = protobuf.UInt32(options.InitialStreamWindowSize)
+		ok = true
+	}
+	if options.StreamErrorOnInvalidHTTPMessaging {
+		h2opts.StreamErrorOnInvalidHttpMessaging = options.StreamErrorOnInvalidHTTPMessaging
+		ok = true
+	}
+	if !ok {
+		return nil
+	}
+	return h2opts
 }
 
 func tvd(d, v time.Duration) time.Duration {

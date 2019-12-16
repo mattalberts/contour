@@ -308,6 +308,9 @@ type Service struct {
 	// PerConnectionBufferLimitBytes is the per-connection buffer limit
 	PerConnectionBufferLimitBytes uint32
 
+	// HTTP2ProtocolOptions defines HTTP/2 protocol options
+	HTTP2ProtocolOptions HTTP2ProtocolOptions
+
 	// ExternalName is an optional field referencing a dns entry for Service type "ExternalName"
 	ExternalName string
 }

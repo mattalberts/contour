@@ -127,6 +127,7 @@ func (b *Builder) addService(svc *v1.Service, port *v1.ServicePort, options Serv
 		MaxRequests:                   maxRequests(svc, options, limits),
 		MaxRetries:                    maxRetries(svc, options, limits),
 		PerConnectionBufferLimitBytes: perConnectionBufferLimitBytes(svc, options, limits),
+		HTTP2ProtocolOptions:          options.HTTP2ProtocolOptions,
 		ExternalName:                  externalName(svc),
 	}
 	b.services[s.toMeta()] = s

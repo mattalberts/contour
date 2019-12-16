@@ -110,6 +110,9 @@ type serveContext struct {
 	// DefaultSecret defines's a default secret used for tls termination
 	DefaultSecret resource
 
+	// AllowConnect allows proxying Websocket and other upgrades over H2 connect.
+	AllowConnect bool `yaml:"allow-connect,omitempty"`
+
 	// DelayedCloseTimeout sets the client drain timeout globally.
 	DelayedCloseTimeout time.Duration `yaml:"delayed-close-timeout,omitempty"`
 
@@ -119,11 +122,26 @@ type serveContext struct {
 	// RequestTimeout sets the client idle timeout globally for http.
 	IdleTimeout time.Duration `yaml:"idle-timeout,omitempty"`
 
+	// InitialConnectionWindowSize initial connection-level flow-control window size.
+	InitialConnectionWindowSize uint32 `yaml:"initial-connection-window-size,omitempty"`
+
+	// InitialStreamWindowSize initial stream-level flow-control window size.
+	InitialStreamWindowSize uint32 `yaml:"initial-stream-window-size,omitempty"`
+
+	// MaxConcurrentStreams maximum concurrent streams allowed for peer on one HTTP/2 connection.
+	MaxConcurrentStreams uint32 `yaml:"max-concurrent-streams,omitempty"`
+
 	// RequestTimeout sets the client request timeout globally for Contour.
 	RequestTimeout time.Duration `yaml:"request-timeout,omitempty"`
 
 	// StreamIdleTimeout the client stream idle timeout globally for http.
 	StreamIdleTimeout time.Duration `yaml:"stream-idle-timeout,omitempty"`
+
+	// StreamErrorOnInvalidHTTPMessaging allows invalid HTTP messaging and headers.
+	// When this option is disabled (default), then the whole HTTP/2 connection is
+	// terminated upon receiving invalid HEADERS frame. However, when this option is
+	// enabled, only the offending stream is terminated.
+	StreamErrorOnInvalidHTTPMessaging bool `yaml:"stream-error-on-invalid-http-messaging,omitempty"`
 
 	// PerConnectionBufferLimitBytes the client connection byte limit.
 	PerConnectionBufferLimitBytes uint32 `yaml:"per-connection-buffer-limit-bytes,omitempty"`

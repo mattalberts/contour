@@ -121,13 +121,18 @@ func registerServe(app *kingpin.Application) (*kingpin.CmdClause, *serveContext)
 
 	serve.Flag("use-extensions-v1beta1-ingress", "Subscribe to the deprecated extensions/v1beta1.Ingress type").BoolVar(&ctx.UseExtensionsV1beta1Ingress)
 
+	serve.Flag("allow-connect", "Allows proxying Websocket and other upgrades over H2 connect for all listeners").BoolVar(&ctx.AllowConnect)
 	serve.Flag("enable-tracing", "Enable tracing for all listeners").BoolVar(&ctx.EnableTracing)
 	serve.Flag("delayed-close-timeout", "Delayed close timeout for all listeners").DurationVar(&ctx.DelayedCloseTimeout)
 	serve.Flag("default-tls-secret", "default tls certificate secret <namespace>/<name>").SetValue(&ctx.DefaultSecret)
 	serve.Flag("drain-timeout", "Drain timeout for all listeners").DurationVar(&ctx.DrainTimeout)
 	serve.Flag("idle-timeout", "Idle timeout for all listeners").DurationVar(&ctx.IdleTimeout)
+	serve.Flag("initial-connection-window-size", "Initial HTTP/2 connection-level flow-control window size for all listenrs").Uint32Var(&ctx.InitialConnectionWindowSize)
+	serve.Flag("initial-stream-window-size", "Initial HTTP/2 stream-level flow-control window size for all listenrs").Uint32Var(&ctx.InitialStreamWindowSize)
 	serve.Flag("request-timeout", "Request timeout for all listeners").DurationVar(&ctx.RequestTimeout)
+	serve.Flag("stream-error-on-invalid-http-messaging", "Allows invalid HTTP messaging and headers on HTTT/2 streams for all listeners").BoolVar(&ctx.StreamErrorOnInvalidHTTPMessaging)
 	serve.Flag("stream-idle-timeout", "Stream idle timeout for all listeners").DurationVar(&ctx.StreamIdleTimeout)
+	serve.Flag("max-concurrent-streams", "Maximum concurrent streams allowed for peer on one HTTP/2 connection for all listenrs").Uint32Var(&ctx.MaxConcurrentStreams)
 	serve.Flag("per-connection-buffer-limit-bytes", "Number of bytes per connection all listeners").Uint32Var(&ctx.PerConnectionBufferLimitBytes)
 	serve.Flag("proxy-idle-timeout", "TCP proxy idle timeout for all listeners").DurationVar(&ctx.ProxyIdleTimeout)
 	serve.Flag("route-idle-timeout", "Idle timeout for all routes").DurationVar(&ctx.RouteIdleTimeout)
@@ -197,6 +202,13 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					IdleTimeout:       safetime(ctx.IdleTimeout),
 					RequestTimeout:    safetime(ctx.RequestTimeout),
 					StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
+					HTTP2ProtocolOptions: envoy.HTTP2ProtocolOptions{
+						AllowConnect:                      ctx.AllowConnect,
+						MaxConcurrentStreams:              ctx.MaxConcurrentStreams,
+						InitialConnectionWindowSize:       ctx.InitialConnectionWindowSize,
+						InitialStreamWindowSize:           ctx.InitialStreamWindowSize,
+						StreamErrorOnInvalidHTTPMessaging: ctx.StreamErrorOnInvalidHTTPMessaging,
+					},
 				},
 				TCPProxyOptions: envoy.TCPProxyOptions{
 					IdleTimeout: safetime(ctx.ProxyIdleTimeout),
@@ -212,6 +224,13 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					IdleTimeout:       safetime(ctx.IdleTimeout),
 					RequestTimeout:    safetime(ctx.RequestTimeout),
 					StreamIdleTimeout: safetime(ctx.StreamIdleTimeout),
+					HTTP2ProtocolOptions: envoy.HTTP2ProtocolOptions{
+						AllowConnect:                      ctx.AllowConnect,
+						MaxConcurrentStreams:              ctx.MaxConcurrentStreams,
+						InitialConnectionWindowSize:       ctx.InitialConnectionWindowSize,
+						InitialStreamWindowSize:           ctx.InitialStreamWindowSize,
+						StreamErrorOnInvalidHTTPMessaging: ctx.StreamErrorOnInvalidHTTPMessaging,
+					},
 				},
 			}),
 			FieldLogger: log.WithField("context", "CacheHandler"),
@@ -251,6 +270,13 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 					MaxRequests:                   ctx.ServiceMaxRequests,
 					MaxRetries:                    ctx.ServiceMaxRetries,
 					PerConnectionBufferLimitBytes: ctx.ServicePerConnectionBufferLimitBytes,
+					HTTP2ProtocolOptions: dag.HTTP2ProtocolOptions{
+						AllowConnect:                      ctx.AllowConnect,
+						MaxConcurrentStreams:              ctx.MaxConcurrentStreams,
+						InitialConnectionWindowSize:       ctx.InitialConnectionWindowSize,
+						InitialStreamWindowSize:           ctx.InitialStreamWindowSize,
+						StreamErrorOnInvalidHTTPMessaging: ctx.StreamErrorOnInvalidHTTPMessaging,
+					},
 				},
 				ServiceLimits: dag.ServiceLimits{
 					ConnectTimeout:                ctx.ServiceConnectTimeoutLimit,

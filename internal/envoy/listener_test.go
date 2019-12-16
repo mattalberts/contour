@@ -552,6 +552,69 @@ func TestHTTPConnectionManager(t *testing.T) {
 				},
 			},
 		},
+		"http2 options": {
+			routename:    "default/kuard",
+			accesslogger: FileAccessLogEnvoy("/dev/stdout"),
+			options: HTTPConnectionOptions{
+				HTTP2ProtocolOptions: HTTP2ProtocolOptions{
+					MaxConcurrentStreams:        100,
+					InitialStreamWindowSize:     65536,   // 64KiB
+					InitialConnectionWindowSize: 1048576, // 1MiB
+				},
+			},
+			want: &envoy_api_v2_listener.Filter{
+				Name: wellknown.HTTPConnectionManager,
+				ConfigType: &envoy_api_v2_listener.Filter_TypedConfig{
+					TypedConfig: toAny(&http.HttpConnectionManager{
+						StatPrefix: "default/kuard",
+						RouteSpecifier: &http.HttpConnectionManager_Rds{
+							Rds: &http.Rds{
+								RouteConfigName: "default/kuard",
+								ConfigSource: &envoy_api_v2_core.ConfigSource{
+									ConfigSourceSpecifier: &envoy_api_v2_core.ConfigSource_ApiConfigSource{
+										ApiConfigSource: &envoy_api_v2_core.ApiConfigSource{
+											ApiType: envoy_api_v2_core.ApiConfigSource_GRPC,
+											GrpcServices: []*envoy_api_v2_core.GrpcService{{
+												TargetSpecifier: &envoy_api_v2_core.GrpcService_EnvoyGrpc_{
+													EnvoyGrpc: &envoy_api_v2_core.GrpcService_EnvoyGrpc{
+														ClusterName: "contour",
+													},
+												},
+											}},
+										},
+									},
+								},
+							},
+						},
+						HttpFilters: []*http.HttpFilter{{
+							Name: wellknown.Gzip,
+						}, {
+							Name: wellknown.GRPCWeb,
+						}, {
+							Name: wellknown.Router,
+						}},
+						CommonHttpProtocolOptions: &envoy_api_v2_core.HttpProtocolOptions{
+							IdleTimeout: protobuf.Duration(60 * time.Second),
+						},
+						HttpProtocolOptions: &envoy_api_v2_core.Http1ProtocolOptions{
+							// Enable support for HTTP/1.0 requests that carry
+							// a Host: header. See #537.
+							AcceptHttp_10: true,
+						},
+						Http2ProtocolOptions: &envoy_api_v2_core.Http2ProtocolOptions{
+							MaxConcurrentStreams:        protobuf.UInt32(100),
+							InitialStreamWindowSize:     protobuf.UInt32(65536),   // 64KiB
+							InitialConnectionWindowSize: protobuf.UInt32(1048576), // 1MiB
+						},
+						AccessLog:                 FileAccessLogEnvoy("/dev/stdout"),
+						UseRemoteAddress:          protobuf.Bool(true),
+						NormalizePath:             protobuf.Bool(true),
+						RequestTimeout:            protobuf.Duration(0),
+						PreserveExternalRequestId: true,
+					}),
+				},
+			},
+		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {

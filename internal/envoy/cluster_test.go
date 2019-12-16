@@ -259,6 +259,63 @@ func TestCluster(t *testing.T) {
 				},
 			},
 		},
+		"h2c upstream with http/2 options": {
+			cluster: &dag.Cluster{
+				Upstream: &dag.Service{
+					Name: s1.Name, Namespace: s1.Namespace,
+					ServicePort: &s1.Spec.Ports[0],
+					Protocol:    "h2c",
+					HTTP2ProtocolOptions: dag.HTTP2ProtocolOptions{
+						MaxConcurrentStreams:        100,
+						InitialStreamWindowSize:     65536,   // 64KiB
+						InitialConnectionWindowSize: 1048576, // 1MiB
+					},
+				},
+			},
+			want: &v2.Cluster{
+				Name:                 "default/kuard/443/da39a3ee5e",
+				AltStatName:          "default_kuard_443",
+				ClusterDiscoveryType: ClusterDiscoveryType(v2.Cluster_EDS),
+				EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+					EdsConfig:   ConfigSource("contour"),
+					ServiceName: "default/kuard/http",
+				},
+				Http2ProtocolOptions: &envoy_api_v2_core.Http2ProtocolOptions{
+					MaxConcurrentStreams:        protobuf.UInt32(100),
+					InitialStreamWindowSize:     protobuf.UInt32(65536),   // 64KiB
+					InitialConnectionWindowSize: protobuf.UInt32(1048576), // 1MiB
+				},
+			},
+		},
+		"h2 upstream with http/2 options": {
+			cluster: &dag.Cluster{
+				Upstream: &dag.Service{
+					Name: s1.Name, Namespace: s1.Namespace,
+					ServicePort: &s1.Spec.Ports[0],
+					Protocol:    "h2",
+					HTTP2ProtocolOptions: dag.HTTP2ProtocolOptions{
+						MaxConcurrentStreams:        100,
+						InitialStreamWindowSize:     65536,   // 64KiB
+						InitialConnectionWindowSize: 1048576, // 1MiB
+					},
+				},
+			},
+			want: &v2.Cluster{
+				Name:                 "default/kuard/443/da39a3ee5e",
+				AltStatName:          "default_kuard_443",
+				ClusterDiscoveryType: ClusterDiscoveryType(v2.Cluster_EDS),
+				EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+					EdsConfig:   ConfigSource("contour"),
+					ServiceName: "default/kuard/http",
+				},
+				TlsContext: UpstreamTLSContext(nil, "", "h2"),
+				Http2ProtocolOptions: &envoy_api_v2_core.Http2ProtocolOptions{
+					MaxConcurrentStreams:        protobuf.UInt32(100),
+					InitialStreamWindowSize:     protobuf.UInt32(65536),   // 64KiB
+					InitialConnectionWindowSize: protobuf.UInt32(1048576), // 1MiB
+				},
+			},
+		},
 		"cluster with random load balancer policy": {
 			cluster: &dag.Cluster{
 				Upstream:           service(s1),
