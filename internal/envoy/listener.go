@@ -65,7 +65,7 @@ func Listener(name, address string, port int, options ListenerOptions, lf []*env
 		PerConnectionBufferLimitBytes:    uint32ptoto(options.PerConnectionBufferLimitBytes),
 		TrafficDirection:                 trafficdirection(options.EnableTracing),
 		ListenerFilters:                  lf,
-		ListenerFiltersTimeout:           durationptoto(options.ListenerFiltersTimeout),
+		ListenerFiltersTimeout:           durationproto(options.ListenerFiltersTimeout),
 		ContinueOnListenerFiltersTimeout: options.ContinueOnListenerFiltersTimeout,
 		TcpFastOpenQueueLength:           uint32ptoto(options.TCPFastOpenQueueLength),
 	}
@@ -163,10 +163,10 @@ func HTTPConnectionManager(routename string, accesslogger []*accesslog.AccessLog
 				// Sets the idle timeout for HTTP connections to 60 seconds.
 				// This is chosen as a rough default to stop idle connections wasting resources,
 				// without stopping slow connections from being terminated too quickly.
-				DelayedCloseTimeout: durationptoto(options.DelayedCloseTimeout),
-				DrainTimeout:        durationptoto(options.DrainTimeout),
-				RequestTimeout:      ptypes.DurationProto(options.RequestTimeout),
-				StreamIdleTimeout:   durationptoto(options.StreamIdleTimeout),
+				DelayedCloseTimeout: durationproto(options.DelayedCloseTimeout),
+				DrainTimeout:        durationproto(options.DrainTimeout),
+				RequestTimeout:      durationproto(options.RequestTimeout),
+				StreamIdleTimeout:   durationproto(options.StreamIdleTimeout),
 
 				// issue #1487 pass through X-Request-Id if provided.
 				PreserveExternalRequestId: true,
@@ -210,7 +210,7 @@ func tvd(d, v time.Duration) time.Duration {
 	return v
 }
 
-func durationptoto(v time.Duration) *duration.Duration {
+func durationproto(v time.Duration) *duration.Duration {
 	if v > 0 {
 		return ptypes.DurationProto(v)
 	}
