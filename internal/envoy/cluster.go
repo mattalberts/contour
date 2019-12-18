@@ -51,6 +51,7 @@ func Cluster(c *dag.Cluster) *v2.Cluster {
 	cluster.LbPolicy = lbPolicy(c.LoadBalancerPolicy)
 	cluster.HealthChecks = edshealthcheck(c)
 	cluster.PerConnectionBufferLimitBytes = uint32ptoto(service.PerConnectionBufferLimitBytes)
+	cluster.UpstreamConnectionOptions = upstreamoptions(service.UpstreamConnectionOptions)
 
 	if service.ConnectTimeout > 0 {
 		cluster.ConnectTimeout = protobuf.Duration(service.ConnectTimeout)
@@ -97,7 +98,6 @@ func Cluster(c *dag.Cluster) *v2.Cluster {
 		fallthrough
 	case "h2c":
 		cluster.Http2ProtocolOptions = http2proto(service.HTTP2ProtocolOptions)
-		cluster.UpstreamConnectionOptions = upstreamoptions(service.UpstreamConnectionOptions)
 	}
 
 	return cluster
