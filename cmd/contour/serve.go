@@ -199,6 +199,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				ListenerOptions: envoy.ListenerOptions{
 					EnableTracing:                 ctx.EnableTracing,
 					PerConnectionBufferLimitBytes: ctx.PerConnectionBufferLimitBytes,
+					DownstreamConnectionOptions: envoy.DownstreamConnectionOptions{
+						KeepAliveInterval: ctx.KeepAliveInterval,
+						KeepAliveProbes:   ctx.KeepAliveProbes,
+						KeepAliveTime:     ctx.KeepAliveTime,
+					},
 				},
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 					DrainTimeout:      safetime(ctx.DrainTimeout),
@@ -221,6 +226,11 @@ func doServe(log logrus.FieldLogger, ctx *serveContext) error {
 				ListenerOptions: envoy.ListenerOptions{
 					EnableTracing:                 ctx.EnableTracing,
 					PerConnectionBufferLimitBytes: ctx.PerConnectionBufferLimitBytes,
+					DownstreamConnectionOptions: envoy.DownstreamConnectionOptions{
+						KeepAliveInterval: ctx.KeepAliveInterval,
+						KeepAliveProbes:   ctx.KeepAliveProbes,
+						KeepAliveTime:     ctx.KeepAliveTime,
+					},
 				},
 				HTTPConnectionOptions: envoy.HTTPConnectionOptions{
 					DrainTimeout:      safetime(ctx.DrainTimeout),

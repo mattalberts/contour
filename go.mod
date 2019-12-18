@@ -23,7 +23,7 @@ require (
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/sys v0.0.0-20190825160603-fb81701db80f // indirect
+	golang.org/x/sys v0.0.0-20190825160603-fb81701db80f
 	golang.org/x/tools v0.0.0-20190929041059-e7abfedfabcf // indirect
 	google.golang.org/grpc v1.23.1
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6

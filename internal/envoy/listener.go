@@ -32,6 +32,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/projectcontour/contour/internal/dag"
 	"github.com/projectcontour/contour/internal/protobuf"
+	"golang.org/x/sys/unix"
 )
 
 // TLSInspector returns a new TLS inspector listener filter.
@@ -55,6 +56,14 @@ type ListenerOptions struct {
 	ListenerFiltersTimeout           time.Duration
 	ContinueOnListenerFiltersTimeout bool
 	TCPFastOpenQueueLength           uint32
+	DownstreamConnectionOptions      DownstreamConnectionOptions
+}
+
+// DownstreamConnectionOptions defines optional downstream configuration
+type DownstreamConnectionOptions struct {
+	KeepAliveInterval uint32
+	KeepAliveProbes   uint32
+	KeepAliveTime     uint32
 }
 
 // Listener returns a new v2.Listener for the supplied address, port, and filters.
@@ -67,6 +76,7 @@ func Listener(name, address string, port int, options ListenerOptions, lf []*env
 		ListenerFilters:                  lf,
 		ListenerFiltersTimeout:           durationproto(options.ListenerFiltersTimeout),
 		ContinueOnListenerFiltersTimeout: options.ContinueOnListenerFiltersTimeout,
+		SocketOptions:                    socketoptions(options.DownstreamConnectionOptions),
 		TcpFastOpenQueueLength:           uint32ptoto(options.TCPFastOpenQueueLength),
 	}
 	if len(filters) > 0 {
@@ -78,6 +88,57 @@ func Listener(name, address string, port int, options ListenerOptions, lf []*env
 		)
 	}
 	return l
+}
+
+func socketoptions(options DownstreamConnectionOptions) []*envoy_api_v2_core.SocketOption {
+	sockopts := []*envoy_api_v2_core.SocketOption{{
+		Description: "sol-keepalive",
+		Level:       unix.SOL_SOCKET,
+		Name:        unix.SO_KEEPALIVE,
+		Value: &envoy_api_v2_core.SocketOption_IntValue{
+			IntValue: 1,
+		},
+		State: envoy_api_v2_core.SocketOption_STATE_LISTENING,
+	}}
+	if options.KeepAliveProbes > 0 {
+		sockopts = append(sockopts, &envoy_api_v2_core.SocketOption{
+			Description: "tcp-keepalive-probes",
+			Level:       unix.IPPROTO_TCP,
+			Name:        unix.TCP_KEEPCNT,
+			Value: &envoy_api_v2_core.SocketOption_IntValue{
+				IntValue: int64(options.KeepAliveProbes),
+			},
+			State: envoy_api_v2_core.SocketOption_STATE_LISTENING,
+		})
+	}
+	if options.KeepAliveTime > 0 {
+		// Socket Options by Platform
+		// https://github.com/golang/go/search?utf8=%E2%9C%93&q=TCP_KEEPIDLE
+		sockopts = append(sockopts, &envoy_api_v2_core.SocketOption{
+			Description: "tcp-keepalive-time",
+			Level:       unix.IPPROTO_TCP,
+			Name:        4, // TCP_KEEPIDLE = 4
+			Value: &envoy_api_v2_core.SocketOption_IntValue{
+				IntValue: int64(options.KeepAliveTime),
+			},
+			State: envoy_api_v2_core.SocketOption_STATE_LISTENING,
+		})
+	}
+	if options.KeepAliveInterval > 0 {
+		sockopts = append(sockopts, &envoy_api_v2_core.SocketOption{
+			Description: "tcp-keepalive-interval",
+			Level:       unix.IPPROTO_TCP,
+			Name:        unix.TCP_KEEPINTVL,
+			Value: &envoy_api_v2_core.SocketOption_IntValue{
+				IntValue: int64(options.KeepAliveInterval),
+			},
+			State: envoy_api_v2_core.SocketOption_STATE_LISTENING,
+		})
+	}
+	if len(sockopts) == 1 {
+		return nil
+	}
+	return sockopts
 }
 
 func trafficdirection(enableTracing bool) envoy_api_v2_core.TrafficDirection {

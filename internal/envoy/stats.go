@@ -41,6 +41,7 @@ func StatsListener(address string, port int, options StatsOptions) *v2.Listener 
 		PerConnectionBufferLimitBytes:    uint32ptoto(options.PerConnectionBufferLimitBytes),
 		ListenerFiltersTimeout:           durationproto(options.ListenerFiltersTimeout),
 		ContinueOnListenerFiltersTimeout: options.ContinueOnListenerFiltersTimeout,
+		SocketOptions:                    socketoptions(options.DownstreamConnectionOptions),
 		TcpFastOpenQueueLength:           uint32ptoto(options.TCPFastOpenQueueLength),
 		FilterChains: FilterChains(
 			&envoy_api_v2_listener.Filter{
